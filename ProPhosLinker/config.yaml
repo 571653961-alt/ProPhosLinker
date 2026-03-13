@@ -1,0 +1,78 @@
+# config.yaml
+data_processing:
+  pro_miss_value_ratio: 0.5
+  phos_miss_value_ratio: 0.5
+  pro_imputation_method: "knn"
+  phos_imputation_method: "knn"
+  pro_normalization_method: "median"
+  phos_normalization_method: "median"
+
+pa:
+  dim_rd_mtd: "PCA"
+
+nmf:
+  NMF_pro_filter_num: 1000
+  NMF_phos_filter_num: 1000
+
+wgcna:
+  WGCNA_pro_filter_num: 3000
+  WGCNA_phos_filter_num: 3000
+  protein_cor_method: "spearman"
+  protein_corFun_tmp: "bicor"
+  protein_cluster_method: "average"
+  protein_networkType: "unsigned"
+  protein_RsquareCut_val: 0.89
+  protein_mergingThresh: 0.2
+  protein_minModuleSize: 10
+  protein_SoftPower: 6
+  phosphoprotein_cor_method: "spearman"
+  phosphoprotein_corFun_tmp: "bicor"
+  phosphoprotein_cluster_method: "average"
+  phosphoprotein_networkType: "signed"
+  phosphoprotein_RsquareCut_val: 0.89
+  phosphoprotein_mergingThresh: 0.2
+  phosphoprotein_minModuleSize: 10
+  phosphoprotein_SoftPower: 6
+  module_cor_threshhold: "0.4"
+  module_cor_p_adj: "0.05"
+  module_cor_method: "spearman"
+
+phosphorate:
+  quantile_rank: 100
+  quantile_rank_step: 1
+  cluster_num: 9
+  vs_total_phos_rate_upper: 0.8
+  vs_total_phos_rate_lower: 0.2
+  top_tail_diff_site_num: 20
+
+differential_network:
+  differential_network_filter_num: 100
+  differential_network_FC_threshold: 2
+  differential_network_p_threshold: 0.05
+  differential_network_p_value_type: "q_value"
+  differential_network_nBoots: 20
+  differential_network_bootnet_R_threshold: 0.3
+  differential_network_nCores: 6
+  differential_network_stability_threshold: 0.4
+  differential_network_cor_method: "spearman"
+  differential_network_edge_FC_threshold: 2
+  differential_network_edge_p_threshold: 0.05
+  differential_network_max_subnet_num: 6
+  differential_network_R_threshold: 0.5
+
+functional_enrichment:
+  GO_showCategory: 6
+  KEGG_showCategory: 18
+
+kgbased_network:
+  kgbased_network_top_n: 6
+  kgbased_network_top_nodes_visualization_num: 70
+  kgbased_network_max_phosphoSite_displayed: 5
+  kgbased_network_node_filtering: "betweenness"
+  kgbased_network_layout: "kk"
+  kgbased_network_comm_detection: "infomap"
+  
+hub_protein_network:
+  hub_protein_top_n: 6
+  hub_protein_d_num: 5
+  hub_protein_network_layout: "kk"
