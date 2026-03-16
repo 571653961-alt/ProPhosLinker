@@ -35,6 +35,7 @@
 #' }
 
 # Suppress package startup messages for cleaner output
+options(warn = -1)
 suppressWarnings(suppressPackageStartupMessages(library(readr)))
 suppressWarnings(suppressPackageStartupMessages(library(stringr)))
 suppressWarnings(suppressPackageStartupMessages(library(dplyr)))
@@ -158,7 +159,7 @@ Procrustes_Analysis <- function(pro_path, phos_path, group_path, out_dir, dim_rd
     
     # Create statistical annotation text
     pro_stat_text <- glue::glue(
-      "Procrustes Analysis\nM\u00B2 = {round(pro$ss, digits = 3)}, p = {round(pro$signif, digits = 3)}"
+      "Procrustes Analysis\nM\u00B2 = {round(pro$ss, digits = 3)}, r = {round(sqrt(1 - pro$ss), digits = 3)}, p = {round(pro$signif, digits = 3)}"
     )
     
     # Create ggplot visualization

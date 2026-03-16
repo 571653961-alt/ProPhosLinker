@@ -13,6 +13,7 @@
 # analyses sequentially, generating comprehensive output files and visualizations.
 #===============================================================================
 
+options(warn = -1)
 suppressWarnings(library(optparse))
 
 #===============================================================================

@@ -85,6 +85,7 @@
 #===============================================================================
 # Load Required Libraries
 #===============================================================================
+options(warn = -1)
 suppressWarnings(suppressPackageStartupMessages(library(WGCNA)))   # Clustering software for weighted gene co-expression network analysis
 suppressWarnings(suppressPackageStartupMessages(library(ggplot2)))  # Grammar of graphics for data visualization
 suppressWarnings(suppressPackageStartupMessages(library(patchwork))) # Combine multiple ggplot2 plots

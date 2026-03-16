@@ -18,6 +18,7 @@
 # COMMAND LINE ARGUMENT DEFINITION
 #===============================================================================
 
+options(warn = -1)
 suppressWarnings(library(optparse))
 
 option_list <- list(

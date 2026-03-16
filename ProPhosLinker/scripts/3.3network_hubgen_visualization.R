@@ -1,6 +1,7 @@
 #' @title Visualize a phosphoprotein network
 #' @description This function visualizes a phosphoprotein network using the igraph package.param name 
 
+options(warn = -1)
 suppressWarnings(library(optparse))
 
 

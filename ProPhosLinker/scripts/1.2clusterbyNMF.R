@@ -7,6 +7,7 @@
 #===============================================================================
 
 # Load necessary libraries with suppressed startup messages
+options(warn = -1)
 suppressWarnings(suppressPackageStartupMessages(library(NMF)))        # For NMF clustering
 suppressWarnings(suppressPackageStartupMessages(library(tidyverse)))  # For data manipulation
 suppressWarnings(suppressPackageStartupMessages(library(ggsankeyfier)))# For Sankey diagram visualization

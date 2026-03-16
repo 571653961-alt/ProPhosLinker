@@ -1,6 +1,7 @@
 # community_detection_plot
 # Description: Detects community-related activities in network traffic.
 
+options(warn = -1)
 suppressWarnings(library(optparse))   # 加载 optparse 包
 option_list <- list(
   #input parameter

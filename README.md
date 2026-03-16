@@ -38,7 +38,7 @@ To use **ProPhosLinker**, you need to install dependencies in the following orde
 2. Run the following command to import the knowledge graph into Neo4j:
 
 ```bash
-neo4j-admin load --database=neo4j --from=path/to/ProPhosLinker_KG.dump --force
+neo4j-admin load --database=neo4j --from="ProPhosLinker/database/neo4j.dump --force
 ````
 
 Make sure to replace `path/to/ProPhosLinker_KG.dump` with the actual path of the dump file.

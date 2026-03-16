@@ -14,6 +14,7 @@
 #   - Multi-panel visualization with customizable colors
 #===============================================================================
 
+options(warn = -1)
 suppressWarnings(library(optparse))
 
 #===============================================================================

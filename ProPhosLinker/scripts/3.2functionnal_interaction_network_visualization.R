@@ -19,6 +19,7 @@
 #   - Functional enrichment analysis for subnetworks
 #===============================================================================
 
+options(warn = -1)
 suppressWarnings(library(optparse))
 
 #===============================================================================

@@ -1,6 +1,44 @@
+#' Perform differential network analysis between two conditions (e.g., case vs control).
+#'
+#' This function compares two conditional networks (either from `Conditional_network` or 
+#' `Conditional_multiplexnetwork` objects) to identify edges that are:
+#' - present only in one condition,
+#' - shared but significantly different in strength (via fold-change and t-test on bootstrapped correlations),
+#' - or conflicting in sign.
+#' 
+#' It also merges node information from both networks. The result is stored in a `Differential_network` S4 object.
+#'
+#' @param Conditional_network An object of class containing `network_case` and `network_control`,
+#'        each with slots `bootnet_result_filter` holding `bootnet_node`, `bootnet_edge`, and `bootnet_stable`.
+#'        Used when multiplex network is not provided.
+#' @param Conditional_multiplexnetwork An alternative input object containing precomputed `network_case` and
+#'        `network_control` with direct `nodes` and `edges` slots. If provided, it takes precedence.
+#' @param edge_FC_threshold Fold-change threshold for absolute correlation difference between groups (default: 1.2).
+#' @param edge_p_threshold P-value threshold for significance of correlation difference (default: 0.05).
+#' @param compare_group Character string specifying the comparison label (e.g., "Case:Control").
+#'        Colons (`:`) are automatically replaced with "-vs-".
+#'
+#' @return An object of S4 class `Differential_network` with slots:
+#'   \describe{
+#'     \item{group_name}{Formatted comparison name (e.g., "Case-vs-Control").}
+#'     \item{diff_nodes}{Combined node data frame from both conditions.}
+#'     \item{diff_edges}{Edge-level comparison results, including status ("Only in case", "Enhanced in control", etc.), 
+#'                       fold-change (`cor_FC`), p-value, and original correlation values.}
+#'   }
+#'
+#' @importFrom dplyr select rename distinct filter mutate case_when full_join left_join pull
+#' @importFrom stats t.test pmin pmax
+#' @importFrom base transform
+#' @import dplyr
+#'
+#' @examples
+#' # This function is typically used internally after constructing conditional networks.
+#' # See package vignettes for full workflow.
+#'
+#' @export
+
 setClass("Differential_network", slots = c(
   group_name="character",
- # Conditional_network_layout="ANY",
   diff_nodes = "data.frame",
   diff_edges = "data.frame"
 ))
@@ -22,7 +60,7 @@ run_diff_network<-function(Conditional_network=NULL,Conditional_multiplexnetwork
   }
 
   comparison<-gsub(":","-vs-", compare_group)
-  split_result <- strsplit(comparison, "-vs-")[[1]]
+  split_result <- strsplit(comparison, "-vs-")
   if(length(split_result)>1){
     casename <- split_result[1] 
     controlname <- split_result[2] 
@@ -52,14 +90,13 @@ run_diff_network<-function(Conditional_network=NULL,Conditional_multiplexnetwork
   if("multiplex_status" %in% colnames(cor_data_all1)){
     cor_data_all1 <- cor_data_all1 |>
       dplyr::mutate(
-        # 从 multiplex_status 列提取 relationship 值
         relationship = ifelse(
-          grepl("_cor$", multiplex_status),  # 检查是否以 "_cor" 结尾
-          sub("_cor$", "", multiplex_status),  # 如果是，去掉 "_cor" 后缀
-          multiplex_status  # 如果不是，保持原值
+          grepl("_cor$", multiplex_status), 
+          sub("_cor$", "", multiplex_status), 
+          multiplex_status 
         )
       ) |>
-      dplyr::select(-multiplex_status)  # 删除 multiplex_status 列
+      dplyr::select(-multiplex_status) 
   }
   
   cor_data_all2 <-run_compare_edge(control_edge) |>
@@ -70,14 +107,13 @@ run_diff_network<-function(Conditional_network=NULL,Conditional_multiplexnetwork
   if("multiplex_status" %in% colnames(cor_data_all2)){
     cor_data_all2 <- cor_data_all2 |>
       dplyr::mutate(
-        # 从 multiplex_status 列提取 relationship 值
         relationship = ifelse(
-          grepl("_cor$", multiplex_status),  # 检查是否以 "_cor" 结尾
-          sub("_cor$", "", multiplex_status),  # 如果是，去掉 "_cor" 后缀
-          multiplex_status  # 如果不是，保持原值
+          grepl("_cor$", multiplex_status), 
+          sub("_cor$", "", multiplex_status), 
+          multiplex_status 
         )
       ) |>
-      dplyr::select(-multiplex_status)  # 删除 multiplex_status 列
+      dplyr::select(-multiplex_status) 
   }
   
   if("score" %in% colnames(cor_data_all1) && "score" %in% colnames(cor_data_all2)){
@@ -107,7 +143,6 @@ run_diff_network<-function(Conditional_network=NULL,Conditional_multiplexnetwork
     )) |>
     dplyr::select(-case_control)
 
-  #如果存在两组共有的边，计算差异
   cor_data_both<-cor_data_all |>
     dplyr::filter(cor_status=="Both group")
   if(nrow(cor_data_both)>0){
@@ -115,7 +150,6 @@ run_diff_network<-function(Conditional_network=NULL,Conditional_multiplexnetwork
       dplyr::filter(from_to  %in% cor_data_both$from_to) 
     cor_data_boot2 <-run_compare_edge(control_bootnet_stable) |>
       dplyr::filter(from_to  %in% cor_data_both$from_to)
-    #diff
     results<-lapply(cor_data_both$from_to,function(x){
       casedata<-cor_data_boot1 |>
         dplyr::filter(from_to==x) |>
@@ -141,7 +175,6 @@ run_diff_network<-function(Conditional_network=NULL,Conditional_multiplexnetwork
         TRUE ~ "Non-significant"
       ))
     results_df$from_to<-cor_data_both$from_to
-    #整合差异结果
     cor_data_diff <- cor_data_all |>
       dplyr::left_join(results_df, by = "from_to")
     
@@ -166,7 +199,7 @@ run_diff_network<-function(Conditional_network=NULL,Conditional_multiplexnetwork
   ##nodes diff
   merge_node <- rbind(case_node,control_node) |>
     dplyr::distinct(node, .keep_all = TRUE) #|>
-  #  dplyr::filter(node %in% union(cor_data_diff$from,cor_data_diff$to)) #只保留至少在一个组里有边的节点
+  #  dplyr::filter(node %in% union(cor_data_diff$from,cor_data_diff$to))
   Differential_network_result <- new("Differential_network",
                                      group_name=comparison,
                                    #  Conditional_network_layout=Conditional_network_layout,
@@ -178,24 +211,25 @@ run_diff_network<-function(Conditional_network=NULL,Conditional_multiplexnetwork
 }
 
 
-
-
-#为了比对边，进行预处理
-# 函数：处理网络边数据，标准化边的表示方式a
+#' Standardize edge representation by sorting node pairs alphabetically to enable comparison.
+#'
+#' This helper function ensures that an edge from A to B is treated identically to B to A
+#' by creating a canonical `from_to` identifier (e.g., "GeneB_GeneA" → always larger first).
+#' It adds a `from_to` column and removes temporary sorting columns.
+#'
+#' @param edges A data frame with columns `from` and `to` representing undirected edges.
+#' @return The same data frame with an additional `from_to` column in the format "larger_smaller".
+#'
+#' @importFrom dplyr select
+#' @importFrom base transform
+#'
+#' @keywords internal
 run_compare_edge<-function(edges){
-  # 1. 标准化边的方向：确保每条边的两个节点按固定顺序排列
-  # 使用pmin和pmax创建排序后的节点对，消除边的方向性
   edges <-transform(edges, 
-                    sorted_from = pmin(from, to),  # 取两个节点中较小的作为sorted_from
-                    sorted_to = pmax(from, to))    # 取两个节点中较大的作为sorted_to
-  # 2. 创建唯一的边标识符：使用排序后的节点对创建无向边标识
-  # 格式为"较大节点_较小节点"，确保同一条无向边有相同的标识符
+                    sorted_from = pmin(from, to), 
+                    sorted_to = pmax(from, to)) 
   edges$from_to<-paste0(edges$sorted_to,"_",edges$sorted_from)
-  # 3. 清理临时列：移除排序过程中创建的临时列
   edges<-edges |>
-    dplyr::select(-sorted_from, -sorted_to) 
-  # 4. 返回处理后的边数据
+    dplyr::select(-sorted_from, -sorted_to)
   return(edges)
 }
-
-

@@ -1,4 +1,53 @@
-
+#' Perform a simple mediation analysis using three specified features (X → M → Y).
+#'
+#' This function conducts a mediation analysis based on a user-specified independent variable (`x`),
+#' mediator (`m`), and dependent variable (`y`) from a count/abundance table, using the `psych::mediate`
+#' function. It validates input data alignment with sample metadata, fits the mediation model,
+#' generates a high-resolution path diagram (PNG), computes key statistics (a, b, c, c', indirect effect),
+#' classifies the mediation type via bootstrapped confidence intervals and p-values,
+#' and saves results to disk.
+#'
+#' @param count_table A data frame with rows as features (must include column `feature_ID`)
+#'                    and columns as samples. Numeric values represent feature abundances.
+#' @param samplelist A data frame with columns `sample` (sample IDs) and `group` (group labels).
+#' @param x Character string: name of the independent variable (predictor) in `feature_ID`.
+#' @param y Character string: name of the dependent variable (outcome) in `feature_ID`.
+#' @param m Character string: name of the mediator variable in `feature_ID`.
+#' @param group_name Character vector specifying which group(s) to subset from `samplelist`.
+#'                   If length > 1, collapsed with "-vs-"; if contains ":", replaced with "-vs-".
+#' @param mediation_p_threshold Numeric: significance threshold for p-values in mediation inference (default: 0.05).
+#' @param outdir Output directory path to save the mediation plot and result table (default: `"./"`).
+#'
+#' @return A data frame with mediation statistics and classification (e.g., "Full Mediation", "Partial Mediation"),
+#'         or `NULL` if an error occurs (with error message printed).
+#'         The function also produces:
+#'         \itemize{
+#'           \item A PNG file: `{mediation_x_m_y_group}.png` (2000×2000, 300 DPI)
+#'           \item A tab-delimited text file: `{mediation_x_m_y_group}_data.txt`
+#'         }
+#'
+#' @importFrom dplyr filter select distinct mutate case_when sym all_of
+#' @importFrom readr write_delim
+#' @importFrom graphics png dev.off
+#' @importFrom utils file.path
+#' @import psych
+#' @import dplyr
+#'
+#' @examples
+#' # Example setup
+#' count_table <- data.frame(
+#'   feature_ID = c("X", "M", "Y", "Z"),
+#'   S1 = c(1, 2, 3, 4),
+#'   S2 = c(2, 3, 4, 5),
+#'   S3 = c(1.5, 2.5, 3.5, 4.5)
+#' )
+#' samplelist <- data.frame(
+#'   sample = c("S1", "S2", "S3"),
+#'   group = "Control"
+#' )
+#' result <- run_mediation(count_table, samplelist, x = "X", m = "M", y = "Y", group_name = "Control")
+#'
+#' @export
 run_mediation<-function(count_table=NULL,samplelist=NULL,x=NULL,y=NULL,m=NULL,group_name="data",
                         mediation_p_threshold=0.05,outdir="./"){
   tryCatch({
@@ -35,18 +84,16 @@ run_mediation<-function(count_table=NULL,samplelist=NULL,x=NULL,y=NULL,m=NULL,gr
     }
     data<-  count_table |>
       dplyr::select(-feature_ID)
-    # 只保留数值型数据（去除 feature_ID 列）
+
     data_matrix <- as.matrix(t(data))
     colnames(data_matrix)<-count_table$feature_ID
 
-    # 拟合模型
     f <- paste(y, "~", x, "+ (",m,")")
     model_names <-paste("mediation",x,  m, y,group_name, sep = "_")
     png(file.path(outdir,paste0(model_names,".png")),width = 2000,height = 2000,res=300)
     model <-psych::mediate(as.formula(f), data = data_matrix)
     dev.off()
-    # 设置筛选阈值
-  #  R2_threshold<-mediation_R2_threshold
+
         df<- data.frame(
           Model =paste(x,m, y, sep = "_") ,
           a=round(as.numeric(model[["a"]][1]),2),
@@ -54,13 +101,13 @@ run_mediation<-function(count_table=NULL,samplelist=NULL,x=NULL,y=NULL,m=NULL,gr
           ab=round(as.numeric(model[["ab"]][1]),2),
           c=round(as.numeric(model[["c"]][1]),2),
           c1= round(as.numeric(model[["indirect"]][1]),2),
-          model_r2=round(as.numeric(model[["cprime.reg"]][["R2"]]),2),#模型解释力
-          c_p   = round(as.numeric(model[["total.reg"]][["prob"]][2]),4),  # 总效应 p 值(X 对 Y 的总影响（不考虑中介变量）)
-          c1_p  = round(as.numeric(model[["cprime.reg"]][["prob"]][2]),4),    # 直接效应 p 值(X 和 M 同时对 Y 的影响,2是X，3是M)
+          model_r2=round(as.numeric(model[["cprime.reg"]][["R2"]]),2),
+          c_p   = round(as.numeric(model[["total.reg"]][["prob"]][2]),4),
+          c1_p  = round(as.numeric(model[["cprime.reg"]][["prob"]][2]),4),    
           a_p=  round(as.numeric(model[["a.reg"]][["prob"]][2]),4),
           b_p=  round(as.numeric(model[["b.reg"]][["prob"]][2]),4),
-          indirect_lower   = round(as.numeric(model[["boot"]][["ci.ab"]][1]),2),        # 间接效应下限
-          indirect_upper   =round(as.numeric(model[["boot"]][["ci.ab"]][2]),2)       # 间接效应上限
+          indirect_lower   = round(as.numeric(model[["boot"]][["ci.ab"]][1]),2),  
+          indirect_upper   =round(as.numeric(model[["boot"]][["ci.ab"]][2]),2)
         )
     mediation_table<-add_mediation(df=df,p_threshold=mediation_p_threshold)
     readr::write_delim(mediation_table,file.path(outdir,paste0(model_names,"_data.txt")),delim = "\t")
@@ -71,36 +118,29 @@ run_mediation<-function(count_table=NULL,samplelist=NULL,x=NULL,y=NULL,m=NULL,gr
   })
   
 }
-# mode="HMDB0062735_HMDB0240773_HMDB0000201"
-# data<-differential_network1@Mediation_subnetwork@count_table
-# metabolites<-data$feature_ID
-# data_matrix <- as.matrix(t(data[,-1]))
-# colnames(data_matrix)=metabolites
-# if(nrow(resultdata)>0){
-#   lapply(resultdata$Model, function(mode){
-#     vector<-unlist(strsplit(mode, split = "_"))
-#     x=vector[1]
-#     m=vector[2]
-#     y=vector[3]
-#     dat <- tibble(
-#       x = data_matrix[, x],
-#       m = data_matrix[, m],
-#       y = data_matrix[, y]
-#     )
-#     colnames(dat)=c(x,m,y)
-#     png(paste0(mode,".png"),width = 2000,height = 2000,res=300)
-#     p<-psych::mediate(as.formula(paste(y, "~", x, "+ (",m,")")), data = dat)
-#     dev.off()
-#   })
-# }else{
-#   message("No eligible mediation analysis models")
-# }
-# 
-# readr::write_delim(resultdata,"Mediation_data.txt",delim = "\t")
 
 
+#' Classify mediation effects based on statistical criteria and bootstrapped confidence intervals.
+#'
+#' This helper function takes a data frame of mediation statistics (from `psych::mediate`)
+#' and assigns a mediation type label using conventional rules based on:
+#' (1) significance of paths a, b, and c';
+#' (2) sign consistency between indirect (ab) and direct (c') effects;
+#' (3) whether the bootstrapped CI for the indirect effect excludes zero.
+#'
+#' Classification includes: "Full Mediation", "Partial Mediation", "Suppression", or "No Significant Mediation".
+#'
+#' @param df A data frame containing columns:
+#'   `a_p`, `b_p`, `c1_p`, `ab`, `c1`, `indirect_lower`, `indirect_upper`.
+#' @param p_threshold Significance threshold for p-values (default: 0.05).
+#'
+#' @return The input `df` with an additional column `mediation_status`.
+#'
+#' @importFrom dplyr mutate case_when
+#' @import dplyr
+#'
+#' @keywords internal
 add_mediation<-function(df,p_threshold = 0.05){
-  # 添加中介状态列（英文）
   df <- df |>
     dplyr::mutate(
       mediation_status =  dplyr::case_when(
@@ -144,4 +184,3 @@ add_mediation<-function(df,p_threshold = 0.05){
     )
   return(df)
 }
-

@@ -12,6 +12,7 @@
 #===============================================================================
 
 # Load required libraries with suppressed startup messages
+options(warn = -1)
 suppressWarnings(suppressPackageStartupMessages(library(clusterProfiler)))  # Core enrichment analysis
 suppressWarnings(suppressPackageStartupMessages(library(org.Hs.eg.db)))     # Human genome annotation
 suppressWarnings(suppressPackageStartupMessages(library(enrichplot)))       # Visualization of enrichment results

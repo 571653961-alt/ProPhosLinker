@@ -1,5 +1,52 @@
-#igraph dplyr Hmisc
-# Define S4 Classes
+#' Construct a preliminary correlation network from a feature count table and extract top-connected features.
+#'
+#' This function computes pairwise correlations (Spearman or Pearson) among features (e.g., genes, taxa)
+#' across samples in a given group, constructs an undirected correlation network using igraph,
+#' filters edges based on correlation strength and p-value thresholds, and then selects the top
+#' features by node degree (connectivity) up to a specified limit (`filter_num`). The result is
+#' encapsulated in a `PreCor` S4 object for downstream analysis.
+#'
+#' @param count_table A data frame with rows as features (must include a column named `feature_ID`)
+#'                    and columns as samples. Numeric values represent feature abundances or counts.
+#' @param group_name A character vector specifying the name(s) of the biological/experimental group(s).
+#'                   If multiple names are provided, they will be collapsed into a single label using "-vs-".
+#' @param cor_method Correlation method passed to `Hmisc::rcorr()`. Default is `"spearman"`.
+#'                   Other options include `"pearson"`.
+#' @param R_threshold Minimum absolute correlation coefficient to retain an edge. Default is `0.8`.
+#' @param p_threshold Maximum unadjusted p-value to retain an edge. Default is `0.05`.
+#' @param filter_num Maximum number of top-connected nodes (features) to retain after network construction.
+#'                   Default is `1000`.
+#'
+#' @return An object of S4 class `PreCor`, containing:
+#'   \describe{
+#'     \item{group_name}{The formatted group comparison label.}
+#'     \item{precor}{A list with: `nodes`, `raw_edges` (all pairwise correlations), `edges` (filtered edges),
+#'                   and `node_degrees` (connectivity scores).}
+#'     \item{filter_num}{The requested maximum number of top nodes.}
+#'     \item{filter_table}{Subset of `count_table` containing only the top-connected features.}
+#'   }
+#'
+#' @importFrom dplyr filter select
+#' @importFrom stats p.adjust
+#' @importFrom igraph graph_from_data_frame degree
+#' @import Hmisc
+#' @import igraph
+#' @import dplyr
+#'
+#' @examples
+#' # Example count table
+#' count_table <- data.frame(
+#'   feature_ID = c("GeneA", "GeneB", "GeneC"),
+#'   Sample1 = c(10, 20, 30),
+#'   Sample2 = c(15, 25, 35),
+#'   Sample3 = c(12, 22, 32)
+#' )
+#' result <- run_prenetwork(count_table, group_name = "Treatment", R_threshold = 0.7, filter_num = 2)
+#' print(result@group_name)
+#' head(result@filter_table)
+#'
+#' @export
+
 setClass("PreCor", slots = c(
   group_name = "character",
   # samplelist = "data.frame",

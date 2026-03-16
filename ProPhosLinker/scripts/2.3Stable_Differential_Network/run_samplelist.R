@@ -1,75 +1,64 @@
+#' Parse a semicolon-separated string of group comparisons into a tidy sample list data frame.
+#'
+#' This function takes an input string that encodes multiple group comparisons in a specific format,
+#' parses each comparison, extracts group names and associated sample identifiers, and returns
+#' a unified data frame listing all samples along with their group and comparison labels.
+#'
+#' @param input_str A character string encoding comparisons in the format:
+#'   "GroupA-VS-GroupB@(SampleA1,SampleA2,...)/(SampleB1,SampleB2,...);..."
+#'   Multiple comparisons are separated by semicolons (`;`).
+#' @return A data.frame with columns: `group`, `sample`, and `comparison`.
+#' @examples
+#' input <- "PCOS-VS-Control@(PCOS_1,PCOS_2)/(Control_1,Control_2);Obese-VS-Lean@(Obese_1)/(Lean_1,Lean_2)"
+#' run_samplelist(input)
+#' @export
 run_samplelist <- function(input_str) {
-  # 1. 分割成向量
+  # 1. Split the input string into individual comparison entries
   comparisons <- unlist(strsplit(input_str, ";"))
   
-  # 2. 创建空列表存储结果
+  # 2. Initialize an empty list to store parsed data frames for each comparison
   samplelist <- list()
   
-  # 3. 处理每个比较组
+  # 3. Process each comparison entry
   for (comp in comparisons) {
-    # 检查格式是否正确
-    if (!grepl("@", comp) || !grepl("-VS-", comp)) {
-      warning(paste("跳过格式不正确的比较组:", comp))
-      next
-    }
     
-    # 分割组名和样本信息
+    # Split into group label and sample specification using "@" as delimiter
     parts <- unlist(strsplit(comp, "@"))
     
-    # 获取组名部分 (如 "PCOS-VS-Control")
+    # Extract the comparison label (e.g., "PCOS-VS-Control")
     group_str <- parts[1]
     
-    # 分割组名
+    # Split the group label into two group names using "-VS-" as delimiter
     group_parts <- unlist(strsplit(group_str, "-VS-"))
     group1 <- group_parts[1]
     group2 <- group_parts[2]
     
-    # 处理样本部分 (如 "(PCOS_1,...)/(Control_1,...)")
+    # Extract the sample string (e.g., "(PCOS_1,...)/(Control_1,...)")
     sample_str <- parts[2]
     
-    # 检查样本字符串格式
-    if (!grepl("^\\(", sample_str) || !grepl("\\)$", sample_str)) {
-      warning(paste("跳过格式不正确的样本字符串:", sample_str))
-      next
-    }
-    
-    # 移除开头和结尾的括号
+    # Remove leading and trailing parentheses from the sample string
     sample_str <- gsub("^\\(", "", sample_str)
     sample_str <- gsub("\\)$", "", sample_str)
     
-    # 分割样本字符串
+    # Split into two parts: samples for group1 and group2, separated by "/"
     samples <- unlist(strsplit(sample_str, "/"))
     
-    # 检查是否正好有两组样本
-    if (length(samples) != 2) {
-      warning(paste("样本格式不正确，应有两组样本:", sample_str))
-      next
-    }
-    
-    # 清理样本名称 - 移除所有括号和空格
+    # Helper function to clean a comma-separated sample list:
+    # - split by commas
+    # - remove any remaining parentheses or whitespace
+    # - drop empty entries
     clean_samples <- function(sample_list) {
-      # 分割样本
-      samples <- unlist(strsplit(sample_list, ","))
-      # 移除括号和空格
-      samples <- gsub("[\\(\\)\\s]", "", samples)
-      # 移除空值
-      samples <- samples[samples != ""]
-      return(samples)
+      samples_vec <- unlist(strsplit(sample_list, ","))
+      samples_clean <- gsub("[\\(\\)\\s]", "", samples_vec)
+      samples_clean <- samples_clean[samples_clean != ""]
+      return(samples_clean)
     }
     
-    # 提取并清理组1的样本
+    # Clean and extract samples for group1 and group2
     group1_samples <- clean_samples(samples[1])
-    
-    # 提取并清理组2的样本
     group2_samples <- clean_samples(samples[2])
     
-    # 检查样本是否为空
-    if (length(group1_samples) == 0 || length(group2_samples) == 0) {
-      warning(paste("一组或多组样本为空:", sample_str))
-      next
-    }
-    
-    # 创建当前比较组的数据框
+    # Create data frames for each group with metadata
     df_group1 <- data.frame(
       group = group1,
       sample = group1_samples,
@@ -84,19 +73,19 @@ run_samplelist <- function(input_str) {
       stringsAsFactors = FALSE
     )
     
-    # 合并两个组
+    # Combine both groups into one data frame for this comparison
     samplelist[[group_str]] <- rbind(df_group1, df_group2)
   }
   
-  # 4. 检查是否有有效数据
+  # 4. Validate that at least one comparison was parsed
   if (length(samplelist) == 0) {
-    stop("没有有效的比较组数据")
+    stop("No valid comparison groups found in input string.")
   }
   
-  # 5. 合并所有比较组的结果
+  # 5. Combine all comparison-specific data frames into a single data frame
   final_samplelist <- do.call(rbind, samplelist)
   
-  # 6. 重置行名
+  # 6. Reset row names for cleanliness
   rownames(final_samplelist) <- NULL
   
   return(final_samplelist)

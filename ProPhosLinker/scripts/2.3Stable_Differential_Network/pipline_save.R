@@ -1,4 +1,4 @@
-#' 网络分析图片和数据保存：该函数执行网络分析流程获得的图片和数据保存
+' Save network analysis results: This function saves the plots and data generated from the network analysis pipeline.
 #'
 #' @param Network A network object (e.g., Stable_SubNetwork, StableNetwork, etc.)
 #' @param stable_num Number of bootstrap networks to display (for stable_test)
@@ -28,11 +28,11 @@
 pipline_save<-function(Network=NULL,
                        stable_num=4,
                        richfactor_threshold=0,
-                       plot_title_size=12,#图标题的大小
-                       axis_title_size=8,#轴标题大小
-                       text_size=8,#轴刻度文本大小
-                       legend_title_size=8,#图例标题大小
-                       legend_text_size=8,#图例文字大小
+                       plot_title_size=12,
+                       axis_title_size=8,
+                       text_size=8,
+                       legend_title_size=8,
+                       legend_text_size=8,
                        font_family="sans",
                        image_margin_size=0.3,
                        node_name_size=1.5,
@@ -55,24 +55,6 @@ pipline_save<-function(Network=NULL,
                        color_gradient_high = "#90362d",
                        fill_gradientn_color = c("#175663", "#dce6e9", "#90362d"),
                        outdir="./"){ 
-  # # #######Test#######
-  # Network=differential_network1
-  # stable_num=4
-  # richfactor_threshold=0
-  # plot_title_size=12  #图标题的大小
-  # axis_title_size=8  #轴标题大小
-  # text_size=8 #轴刻度文本大小
-  # legend_text_size=8 #图例文字大小
-  # font_family="sans"
-  # image_margin_size=0.3
-  # node_name_size=1.5
-  # R_threshold=0.5
-  # outdir= "E:/pro_phosphpro/results/2.DE_Pro_Phospro"
-  # ModuleSize_show = 0
-  # top_module_num =20
-  # #######Test#######
-  
-  
   group_name=Network@group_name                   #T-vs-N
   split_result <- strsplit(group_name, "-vs-")[[1]]
   Networkclass=class(Network)[1]
@@ -115,7 +97,7 @@ if(Networkclass=="Stable_SubNetwork"){
   }, error = function(e) {
     message("Error in stable_test: ", e$message)
   })
-  #稳定网络
+  
   tryCatch({
 
   stableplot1<-network_show(Network=stable_subnetwork1,plot_type="overall_network",R_threshold=R_threshold,image_margin_size=image_margin_size,
@@ -149,10 +131,10 @@ if(Networkclass=="Stable_SubNetwork"){
     if (!is.null(ann_filter) && nrow(ann_filter) > 0) {
       bubbleDiagram_net<-network_show(Network=stable_subnetwork1,plot_type="enrichment",focus=c("all"),
                                       richfactor_threshold = richfactor_threshold,plot_title_size=plot_title_size,
-                                      axis_title_size=axis_title_size,#轴标题大小
-                                      text_size=text_size,#轴刻度文本大小
-                                      legend_title_size=legend_title_size,#图例标题大小
-                                      legend_text_size=legend_text_size#图例文字大小
+                                      axis_title_size=axis_title_size,
+                                      text_size=text_size,
+                                      legend_title_size=legend_title_size,
+                                      legend_text_size=legend_text_size
                                       
       )
       outdir1<-file.path(outdir,Networkclass,"OverallNetwork")  
@@ -168,7 +150,6 @@ if(Networkclass=="Stable_SubNetwork"){
   }, error = function(e) {
     message("Error in enrichment: ", e$message)
   })
-  #模块富集标注(文章)
   tryCatch({
     if(any(!is.null(stable_subnetwork1@SubNetwork)) &&
        any(!is.null(stable_subnetwork1@SubNetwork@overall_cluster_network)) 
@@ -295,12 +276,8 @@ if(Networkclass=="Stable_SubNetwork"){
     message("Error in sub_network: ", e$message)
   })
   tryCatch({
-  #子模块:按class上色
-  #network_show(Network=stable_subnetwork1,plot_type="sub_network",subnetwork_name=c("all"), node_colortype="Class",R_threshold = 0.6,show_node_name = TRUE)
-  #子模块的富集分析
 if (any(!is.null(stable_subnetwork1@Subnet_Enrichment))){
   netname<-names(stable_subnetwork1@Subnet_Enrichment@network)
-  # enrich_subnets<- c()
   filelist<-lapply(netname, function(i){
     if(any(!is.null(stable_subnetwork1@Subnet_Enrichment)) &&
        any(!is.null(stable_subnetwork1@Subnet_Enrichment@network))){
@@ -312,10 +289,10 @@ if (any(!is.null(stable_subnetwork1@Subnet_Enrichment))){
       bubbleDiagram_subnet<-network_show(Network=stable_subnetwork1,subnetwork_name = c(i),
                                          plot_type="subnetwork_enrichment",
                                          richfactor_threshold = richfactor_threshold,plot_title_size=plot_title_size,
-                                         axis_title_size=axis_title_size,#轴标题大小
-                                         text_size=text_size,#轴刻度文本大小
-                                         legend_title_size=legend_title_size,#图例标题大小
-                                         legend_text_size=legend_text_size#图例文字大小
+                                         axis_title_size=axis_title_size,
+                                         text_size=text_size,
+                                         legend_title_size=legend_title_size,
+                                         legend_text_size=legend_text_size
                                          )
       outdir1<-file.path(outdir,Networkclass,"SubNetWork",i)
       if (!dir.exists(outdir1)) {
@@ -335,65 +312,9 @@ if (any(!is.null(stable_subnetwork1@Subnet_Enrichment))){
 }else if(Networkclass=="Stable_DifferentialNetwork"){
 
   differential_network1=Network
-# #实验组稳定性抽样:::::: Stable_DifferentialNetwork\StabilityTest\T
-# #differential_network1@Conditional_network
-#   tryCatch({
-#   bootnetplot1<-network_show(Network=differential_network1,plot_type="case_stable_test",image_margin_size=image_margin_size,
-#                              plot_title_size=plot_title_size,font_family=font_family,legend_title_size=legend_title_size,legend_text_size=legend_text_size,
-#                              stable_num=stable_num,R_threshold = R_threshold)
-#   outdir1<-file.path(outdir,Networkclass,"StabilityTest",casename)
-#   if (!dir.exists(outdir1)) {
-#     dir.create(outdir1, recursive = TRUE)
-#   }
-#   boot_names <- names(bootnetplot1@data)
-#   lapply(boot_names,function(net_name){
-#     boot_data <- bootnetplot1@data[[net_name]]
-#     edges<-as.data.frame(boot_data$edges)
-#     nodes<-as.data.frame(boot_data$nodes) |>
-#       dplyr::mutate(x=boot_data$plot_layout[,1],y=boot_data$plot_layout[,2])
-#     net_name <- gsub(" ", "", net_name)
-#     readr::write_delim(nodes,file.path(outdir1,paste0("nodes_",net_name,"_",casename,".txt")),delim="\t")
-#     readr::write_delim(edges,file.path(outdir1,paste0("edges_",net_name,"_",casename,".txt")),delim="\t") 
-#   })
-#   # "E:\pro_phosphpro\results\2.DE_Pro_Phospro\Stable_DifferentialNetwork\StabilityTest\T\Bootnet_T.pdf"
-#   pdf(file = file.path(outdir1, paste0("Bootnet_",casename,".pdf")), 
-#       width = bootnetplot1@picture_width, height = bootnetplot1@picture_height)
-#   # print(bootnetplot1@plot)
-#   dev.off()
-#   }, error = function(e) {
-#     message("Error in case_stable_test: ", e$message)
-#   })
-# #对照组稳定性抽样:::::: Stable_DifferentialNetwork\StabilityTest\N
-#   tryCatch({
-#   bootnetplot2<-network_show(Network=differential_network1,plot_type="control_stable_test",image_margin_size=image_margin_size,
-#                              plot_title_size=plot_title_size,font_family=font_family,legend_title_size=legend_title_size,legend_text_size=legend_text_size,
-#                              stable_num=stable_num,R_threshold = R_threshold)
-#   outdir1<-file.path(outdir,Networkclass,"StabilityTest",controlname)
-#   if (!dir.exists(outdir1)) {
-#     dir.create(outdir1, recursive = TRUE)
-#   }
-#   boot_names <- names(bootnetplot2@data)
-#   lapply(boot_names,function(net_name){
-#     boot_data <- bootnetplot2@data[[net_name]]
-#     edges<-as.data.frame(boot_data$edges)
-#     nodes<-as.data.frame(boot_data$nodes) |>
-#       dplyr::mutate(x=boot_data$plot_layout[,1],y=boot_data$plot_layout[,2])
-#     net_name <- gsub(" ", "", net_name)
-#     readr::write_delim(nodes,file.path(outdir1,paste0("nodes_",net_name,"_",controlname,".txt")),delim="\t")
-#     readr::write_delim(edges,file.path(outdir1,paste0("edges_",net_name,"_",controlname,".txt")),delim="\t") 
-#   })
-#   pdf(file = file.path(outdir1, paste0("Bootnet_",controlname,".pdf")),
-#   width = bootnetplot2@picture_width, height = bootnetplot2@picture_height)
-#   # print(bootnetplot2@plot) 
-#   # "E:\pro_phosphpro\results\2.DE_Pro_Phospro\Stable_DifferentialNetwork\StabilityTest\N\Bootnet_N.pdf"
-#   dev.off()
-# 
-#   }, error = function(e) {
-#     message("Error in control_stable_test: ", e$message)
-#   })
-#   
+
   
-  # 1. 差异网络组图::::::::::::: Stable_DifferentialNetwork\OverallNetwork
+  # 1. Stable_DifferentialNetwork\OverallNetwork
   tryCatch({
   if(any(!is.null(differential_network1@Differential_network))) {
     diffnetplot<-network_show(Network=differential_network1,plot_type="differential_network",
@@ -402,26 +323,18 @@ if (any(!is.null(stable_subnetwork1@Subnet_Enrichment))){
                               node_colortype="Log2FC",focus=c("all"),node_size=3,node_name_size=node_name_size,
                               show_edge_legend = TRUE,show_node_legend = TRUE,show_node_name = TRUE
     )
-    # outdir1<-file.path(outdir,Networkclass,"2.3.1Overall_Network")
     outdir1<-file.path(outdir,"2.3.1Overall_Network")
     if (!dir.exists(outdir1)) {
       dir.create(outdir1, recursive = TRUE)
     }
     for (net_name1 in names(diffnetplot@data)) {
         LAYOUT<-as.data.frame(diffnetplot@data[[net_name1]]$plot_layout)
-        nodes<-as.data.frame(diffnetplot@data[[net_name1]]$nodes) |>#"kk"
+        nodes<-as.data.frame(diffnetplot@data[[net_name1]]$nodes) |>
           dplyr::mutate(x=LAYOUT[,1],y=LAYOUT[,2]) 
         edges<-as.data.frame(diffnetplot@data[[net_name1]]$edges)
         readr::write_delim(nodes,file.path(outdir1,paste0("nodes_",net_name1,".txt")),delim="\t")
         readr::write_delim(edges,file.path(outdir1,paste0("edges_",net_name1,".txt")),delim="\t") 
     }
-    # pdf(file = file.path(outdir1, paste0("Differential_network_",group_name,".pdf")), 
-    #     width = diffnetplot@picture_width, height = diffnetplot@picture_height)
-    # print(diffnetplot@plot)
-    # dev.off()
-   
-    # Differential_overall_network_plot(outdir1)
-    # # print("=========富集分析=============")
     outdir1_enrich <- file.path(outdir1,"Functional_Enrichment")
     if (!dir.exists(outdir1_enrich)) {
       dir.create(outdir1_enrich, recursive = TRUE)
@@ -429,15 +342,12 @@ if (any(!is.null(stable_subnetwork1@Subnet_Enrichment))){
     pro_list <- nodes[nodes$Class == omics1_name,]$node
     phos_list <- nodes[nodes$Class == omics2_name,]$node
     phos_list <- phos_pro[phos_pro[[omics2_name]]  %in% phos_list,][[omics1_name]]
-    # print(pro_list)
-    # print(phos_list)
     if(length(pro_list)==0){
       pro_list <- c()
     }
     if(length(phos_list)==0){
       phos_list <- c()
     }
-    # omics_enrichment_list(pro_list,phos_list,outdir1_enrich,omics_name1=omics1_name,omics_name2=omics2_name,pvalueCutoff = 0.05,GO_showCategory=6,KEGG_showCategory=15)
     omics_enrichment_list(pro_list,phos_list,outdir1_enrich,
                           omics1_name=omics1_name,omics2_name=omics2_name,
                           enrich_fromType = enrich_fromType,
@@ -445,48 +355,13 @@ if (any(!is.null(stable_subnetwork1@Subnet_Enrichment))){
                           color_gradient_low = color_gradient_low,
                           color_gradient_high = color_gradient_high
     )
-    
-    # # print("=========富集分析=============")
   }
   }, error = function(e) {
     message("Error in differential_network: ", e$message)
   })
 
-  ####目前没做差异网路分析############
-# if(any(!is.null(differential_network1@Enrichment)) &&
-#    any(!is.null(differential_network1@Enrichment@network))){
-#   ann_filter <- differential_network1@Enrichment@network$annotations_filter
-# }else{
-#   ann_filter <-NULL
-# }
-  
-#   tryCatch({
-# #按差异网络边的差异类型分类，分别对每类涉及到的蛋白做富集
-# if (!is.null(ann_filter) && nrow(ann_filter) > 0) {
-#   bubbleDiagram_net<-network_show(Network=differential_network1,plot_type="enrichment",focus=c("all"),
-#                                   richfactor_threshold = richfactor_threshold,plot_title_size=plot_title_size,
-#                                   axis_title_size=axis_title_size,#轴标题大小
-#                                   text_size=text_size,#轴刻度文本大小
-#                                   legend_title_size=legend_title_size,#图例标题大小
-#                                   legend_text_size=legend_text_size#图例文字大小
-# 
-#   )
-#   outdir1<-file.path(outdir,Networkclass,"OverallNetwork")
-#   if (!dir.exists(outdir1)) {
-#     dir.create(outdir1, recursive = TRUE)
-#   }
-#   readr::write_delim(bubbleDiagram_net@data$net, file.path(outdir1, paste0("BubbleDiagram_",group_name,".txt")), delim = "\t")
-#   pdf(file = file.path(outdir1, paste0("BubbleDiagram_",group_name,".pdf")),
-#       width = bubbleDiagram_net@picture_width, height = bubbleDiagram_net@picture_height)
-#   print(bubbleDiagram_net@plot)
-#   dev.off()
-# }
-#   }, error = function(e) {
-#     message("Error in enrichment: ", e$message)
-#   })
-
-  
-  #2.子网络差异分析(overall)::::::::::: Stable_DifferentialNetwork\NetworkClustering
+ 
+  #2. Stable_DifferentialNetwork\NetworkClustering
   tryCatch({
     if(any(!is.null(differential_network1@Differential_subnetwork)) &&
        any(!is.null(differential_network1@Differential_subnetwork@overall_cluster_network))
@@ -501,15 +376,11 @@ if (any(!is.null(stable_subnetwork1@Subnet_Enrichment))){
   if (!dir.exists(outdir1)) {
     dir.create(outdir1, recursive = TRUE)
   }
-  nodes<-as.data.frame(diff_subnetplot@data$net$nodes) |>#"kk"
+  nodes<-as.data.frame(diff_subnetplot@data$net$nodes) |>
     dplyr::mutate(x=diff_subnetplot@data$net$plot_layout[,1],y=diff_subnetplot@data$net$plot_layout[,2])
   edges<-as.data.frame(diff_subnetplot@data$net$edges)
   readr::write_delim(nodes,file.path(outdir1,paste0("nodes_",group_name,".txt")),delim="\t")
   readr::write_delim(edges,file.path(outdir1,paste0("edges_",group_name,".txt")),delim="\t")
-  # pdf(file = file.path(outdir1, paste0("Network_Clustering_",group_name,".pdf")),
-  #     width = diff_subnetplot@picture_width, height = diff_subnetplot@picture_height)
-  # print(diff_subnetplot@plot)
-  # dev.off()
 
   diff_net_community_detection_plot(file.path(outdir1,paste0("nodes_",group_name,".txt")),
                                     file.path(outdir1,paste0("edges_",group_name,".txt")),
@@ -522,7 +393,7 @@ if (any(!is.null(stable_subnetwork1@Subnet_Enrichment))){
     message("Error in diff_overall_cluster_network: ", e$message)
   })
   
-  #3.子网络差异分析(sub):建议一个一个输出子网络:::::::::: Stable_DifferentialNetwork\SubNetwork
+  #3. Stable_DifferentialNetwork\SubNetwork
 if (any(!is.null(differential_network1@Differential_subnetwork))){
 
   tryCatch({
@@ -533,7 +404,6 @@ if (any(!is.null(differential_network1@Differential_subnetwork))){
     netname_show <- netname
   }
   filelist<- lapply(netname_show, function(i){
-    #子网络
     diff_subnet_top_plot<-network_show(Network=differential_network1,
                                        plot_type="differential_subnetwork",image_margin_size=image_margin_size,
                                        node_colortype="Log2FC",focus=c("all"),subnetwork_name = c(i),
@@ -546,7 +416,7 @@ if (any(!is.null(differential_network1@Differential_subnetwork))){
       dir.create(outdir1, recursive = TRUE)
     }
     for (net_name1 in names(diff_subnet_top_plot@data)) {
-    nodes<-as.data.frame(diff_subnet_top_plot@data[[net_name1]]$nodes) |>#"kk"
+    nodes<-as.data.frame(diff_subnet_top_plot@data[[net_name1]]$nodes) |>
       dplyr::mutate(x=diff_subnet_top_plot@data[[net_name1]]$plot_layout[,1],y=diff_subnet_top_plot@data[[net_name1]]$plot_layout[,2]) 
     edges<-as.data.frame(diff_subnet_top_plot@data[[net_name1]]$edges)
     readr::write_delim(nodes,file.path(outdir1,paste0("nodes_",i,"_",net_name1,".txt")),delim="\t")
@@ -565,23 +435,15 @@ if (any(!is.null(differential_network1@Differential_subnetwork))){
     if (!dir.exists(outdir1_enrich)) {
       dir.create(outdir1_enrich, recursive = TRUE)
     }
-    # pro_list <- nodes[nodes$Class == "protein",]$node
-    # phos_list <- nodes[nodes$Class == "phosphoprotein",]$node
-    # phos_list <- phos_pro[phos_pro$Site  %in% phos_list,]$Protein
-    # print("=========check富集分析=============")
     pro_list <- nodes[nodes$Class == omics1_name,]$node
     phos_list <- nodes[nodes$Class == omics2_name,]$node
     phos_list <- phos_pro[phos_pro[[omics2_name]]  %in% phos_list,][[omics1_name]]
-    # print(pro_list)
-    # print(phos_list)
     if(length(pro_list)==0){
       pro_list <- c()
     }
     if(length(phos_list)==0){
       phos_list <- c()
     }
-    # pro_list = c("Q9Y4B5", "Q86YV0", "P35232", "Q96BY6" ,"P49116" ,"Q96EZ8", "Q16706")
-    # print("=========富集分析=============")
     omics_enrichment_list(pro_list,phos_list,outdir1_enrich,
                           omics1_name=omics1_name,omics2_name=omics2_name,
                           enrich_fromType = enrich_fromType,
@@ -589,12 +451,6 @@ if (any(!is.null(differential_network1@Differential_subnetwork))){
                           color_gradient_low = color_gradient_low,
                           color_gradient_high = color_gradient_high
                           )
-    # print("=========富集分析=============")
-    # pdf(file = file.path(outdir1, paste0("Differential_subnetwork_",i,"_",group_name,".pdf")), 
-    #     width = diff_subnet_top_plot@picture_width, height = diff_subnet_top_plot@picture_height)
-    # print(diff_subnet_top_plot@plot)
-    # dev.off()
-    
     
   })
   }, error = function(e) {
@@ -604,8 +460,6 @@ if (any(!is.null(differential_network1@Differential_subnetwork))){
 }
   
   tryCatch({
-    
-    #子网络富集
 if (any(!is.null(differential_network1@DiffSubnet_Enrichment))){
 netname<-names(differential_network1@DiffSubnet_Enrichment@network)
 
@@ -620,10 +474,10 @@ filelist<-lapply(netname, function(i){
     bubbleDiagram_subnet<-network_show(Network=differential_network1,subnetwork_name = c(i),
                                        plot_type="differential_subnetwork_enrichment",
                                        richfactor_threshold = richfactor_threshold,plot_title_size=plot_title_size,
-                                       axis_title_size=axis_title_size,#轴标题大小
-                                       text_size=text_size,#轴刻度文本大小
-                                       legend_title_size=legend_title_size,#图例标题大小
-                                       legend_text_size=legend_text_size)#图例文字大小
+                                       axis_title_size=axis_title_size,
+                                       text_size=text_size,
+                                       legend_title_size=legend_title_size,
+                                       legend_text_size=legend_text_size)
     outdir1<-file.path(outdir,"SubNetwork",i) 
     if (!dir.exists(outdir1)) {
       dir.create(outdir1, recursive = TRUE)
@@ -631,7 +485,6 @@ filelist<-lapply(netname, function(i){
     readr::write_delim(as.data.frame(bubbleDiagram_subnet@data[[i]]), file.path(outdir1, paste0("BubbleDiagram_",i,"_",group_name,".txt")), delim = "\t")
     pdf(file = file.path(outdir1, paste0("BubbleDiagram_",i,"_",group_name,".pdf")), 
         width = bubbleDiagram_subnet@picture_width, height = bubbleDiagram_subnet@picture_height)
-    # print(bubbleDiagram_subnet@plot)
     dev.off()
     
   }else{
@@ -649,7 +502,6 @@ filelist<-lapply(netname, function(i){
 
   
   multiplex_network1=Network
-  #PPI网络
   tryCatch({
   ppiplot<-network_show(Network=multiplex_network1,plot_type="interaction_network",image_margin_size=image_margin_size,
                         plot_title_size=plot_title_size,font_family=font_family,legend_title_size=legend_title_size,legend_text_size=legend_text_size)
@@ -657,7 +509,7 @@ filelist<-lapply(netname, function(i){
   if (!dir.exists(outdir1)) {
     dir.create(outdir1, recursive = TRUE)
   }
-  nodes<-as.data.frame(ppiplot@data$net$nodes) |>#"kk"
+  nodes<-as.data.frame(ppiplot@data$net$nodes) |>
     dplyr::mutate(x=ppiplot@data$net$plot_layout[,1],y=ppiplot@data$net$plot_layout[,2]) 
   edges<-as.data.frame(ppiplot@data$net$edges)
   readr::write_delim(nodes,file.path(outdir1,paste0("nodes_",group_name,".txt")),delim="\t")
@@ -670,7 +522,7 @@ filelist<-lapply(netname, function(i){
     message("Error in interaction_network: ", e$message)
   })
   tryCatch({
-  #实验组稳定性抽样
+
   bootnetplot1<-network_show(Network=multiplex_network1,plot_type="case_stable_test",image_margin_size=image_margin_size,
                              plot_title_size=plot_title_size,font_family=font_family,legend_title_size=legend_title_size,legend_text_size=legend_text_size,
                              stable_num=4,R_threshold = R_threshold)
@@ -696,7 +548,7 @@ filelist<-lapply(netname, function(i){
     message("Error in case_stable_test: ", e$message)
   })
   tryCatch({
-  #对照组稳定性抽样
+
   bootnetplot2<-network_show(Network=multiplex_network1,plot_type="control_stable_test",image_margin_size=image_margin_size,
                              plot_title_size=plot_title_size,font_family=font_family,legend_title_size=legend_title_size,legend_text_size=legend_text_size,
                              stable_num=4,R_threshold = R_threshold)
@@ -723,7 +575,7 @@ filelist<-lapply(netname, function(i){
 })
   
   tryCatch({
-  #实验组稳定网络
+
   stableplot1<-network_show(Network=multiplex_network1,plot_type="case_overall_network",image_margin_size=image_margin_size,
                             plot_title_size=plot_title_size,font_family=font_family,legend_title_size=legend_title_size,legend_text_size=legend_text_size,
                             R_threshold = R_threshold)
@@ -731,7 +583,7 @@ filelist<-lapply(netname, function(i){
   if (!dir.exists(outdir1)) {
     dir.create(outdir1, recursive = TRUE)
   }
-  nodes<-as.data.frame(stableplot1@data$net$nodes) |>#"kk"
+  nodes<-as.data.frame(stableplot1@data$net$nodes) |>
     dplyr::mutate(x=stableplot1@data$net$plot_layout[,1],y=stableplot1@data$net$plot_layout[,2]) 
   edges<-as.data.frame(stableplot1@data$net$edges)
   readr::write_delim(nodes,file.path(outdir1,paste0("nodes_",casename,".txt")),delim="\t")
@@ -744,7 +596,6 @@ filelist<-lapply(netname, function(i){
     message("Error in case_overall_network: ", e$message)
   })
   tryCatch({
-  #对照组稳定网络
   stableplot2<-network_show(Network=multiplex_network1,plot_type="control_overall_network",image_margin_size=image_margin_size,
                             plot_title_size=plot_title_size,font_family=font_family,legend_title_size=legend_title_size,legend_text_size=legend_text_size,
                             R_threshold = R_threshold)
@@ -752,7 +603,7 @@ filelist<-lapply(netname, function(i){
   if (!dir.exists(outdir1)) {
     dir.create(outdir1, recursive = TRUE)
   }
-  nodes<-as.data.frame(stableplot2@data$net$nodes) |>#"kk"
+  nodes<-as.data.frame(stableplot2@data$net$nodes) |>
     dplyr::mutate(x=stableplot2@data$net$plot_layout[,1],y=stableplot2@data$net$plot_layout[,2]) 
   edges<-as.data.frame(stableplot2@data$net$edges)
   readr::write_delim(nodes,file.path(outdir1,paste0("nodes_",controlname,".txt")),delim="\t")
@@ -779,7 +630,7 @@ filelist<-lapply(netname, function(i){
     }
     for (net_name1 in names(diffnetplot@data)) {
       LAYOUT<-as.data.frame(diffnetplot@data[[net_name1]]$plot_layout)
-      nodes<-as.data.frame(diffnetplot@data[[net_name1]]$nodes) |>#"kk"
+      nodes<-as.data.frame(diffnetplot@data[[net_name1]]$nodes) |>
         dplyr::mutate(x=LAYOUT[,1],y=LAYOUT[,2]) 
       edges<-as.data.frame(diffnetplot@data[[net_name1]]$edges)
       readr::write_delim(nodes,file.path(outdir1,paste0("nodes_",net_name1,".txt")),delim="\t")
@@ -805,10 +656,10 @@ filelist<-lapply(netname, function(i){
 
       bubbleDiagram_net<-network_show(Network=multiplex_network1,plot_type="enrichment",focus=c("all"),
                                       richfactor_threshold = richfactor_threshold,plot_title_size=plot_title_size,
-                                      axis_title_size=axis_title_size,#轴标题大小
-                                      text_size=text_size,#轴刻度文本大小
-                                      legend_title_size=legend_title_size,#图例标题大小
-                                      legend_text_size=legend_text_size#图例文字大小
+                                      axis_title_size=axis_title_size,
+                                      text_size=text_size,
+                                      legend_title_size=legend_title_size,
+                                      legend_text_size=legend_text_size
                                       )
       outdir1<-file.path(outdir,Networkclass,"OverallNetwork")  
       if (!dir.exists(outdir1)) {
@@ -824,7 +675,6 @@ filelist<-lapply(netname, function(i){
     message("Error in enrichment: ", e$message)
   })
   tryCatch({
-  #子网络差异分析(overall)
   if(any(!is.null(multiplex_network1@Differential_subnetwork)) &&
      any(!is.null(multiplex_network1@Differential_subnetwork@overall_cluster_network)) 
      ){
@@ -836,7 +686,7 @@ filelist<-lapply(netname, function(i){
   if (!dir.exists(outdir1)) {
     dir.create(outdir1, recursive = TRUE)
   }
-  nodes<-as.data.frame(diff_subnetplot@data$net$nodes) |>#"kk"
+  nodes<-as.data.frame(diff_subnetplot@data$net$nodes) |>
     dplyr::mutate(x=diff_subnetplot@data$net$plot_layout[,1],y=diff_subnetplot@data$net$plot_layout[,2]) 
   edges<-as.data.frame(diff_subnetplot@data$net$edges)
   readr::write_delim(nodes,file.path(outdir1,paste0("nodes_",group_name,".txt")),delim="\t")
@@ -855,7 +705,6 @@ filelist<-lapply(netname, function(i){
     tryCatch({
     netname<-names(multiplex_network1@Differential_subnetwork@subnetworks)
     filelist<- lapply(netname, function(i){
-      #子网络
       diff_subnet_top_plot<-network_show(Network=multiplex_network1,
                                          plot_type="differential_subnetwork",image_margin_size=image_margin_size,
                                          node_colortype="Log2FC",focus=c("all"),subnetwork_name = c(i),
@@ -868,7 +717,7 @@ filelist<-lapply(netname, function(i){
         dir.create(outdir1, recursive = TRUE)
       }
       for (net_name1 in names(diff_subnet_top_plot@data)) {
-        nodes<-as.data.frame(diff_subnet_top_plot@data[[net_name1]]$nodes) |>#"kk"
+        nodes<-as.data.frame(diff_subnet_top_plot@data[[net_name1]]$nodes) |>
           dplyr::mutate(x=diff_subnet_top_plot@data[[net_name1]]$plot_layout[,1],y=diff_subnet_top_plot@data[[net_name1]]$plot_layout[,2]) 
         edges<-as.data.frame(diff_subnet_top_plot@data[[net_name1]]$edges)
         readr::write_delim(nodes,file.path(outdir1,paste0("nodes_",i,"_",net_name1,".txt")),delim="\t")
@@ -901,10 +750,10 @@ filelist<-lapply(netname, function(i){
       bubbleDiagram_subnet<-network_show(Network=multiplex_network1,subnetwork_name = c(i),
                                          plot_type="differential_subnetwork_enrichment",
                                          richfactor_threshold = richfactor_threshold,plot_title_size=plot_title_size,
-                                         axis_title_size=axis_title_size,#轴标题大小
-                                         text_size=text_size,#轴刻度文本大小
-                                         legend_title_size=legend_title_size,#图例标题大小
-                                         legend_text_size=legend_text_size#图例文字大小
+                                         axis_title_size=axis_title_size,
+                                         text_size=text_size,
+                                         legend_title_size=legend_title_size,
+                                         legend_text_size=legend_text_size
                                         )
       outdir1<-file.path(outdir,Networkclass,"SubNetwork",i) 
       if (!dir.exists(outdir1)) {
@@ -925,4 +774,3 @@ filelist<-lapply(netname, function(i){
   stop(paste0("‘pipline_save‘ does not applies to the target object :",Networkclass))
 }
 }
-
