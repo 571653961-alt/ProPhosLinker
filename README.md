@@ -26,7 +26,7 @@ To use **ProPhosLinker**, you need to install dependencies in the following orde
 
 ### 1) Install Neo4j (required for functional network analysis)
 
-**ProPhosLinker** relies on **Neo4j 4.x+** for functional network analysis. Ensure Neo4j is installed and accessible via `neo4j` or `cypher-shell`.
+**ProPhosLinker** relies on **Neo4j 5.x+** for functional network analysis. Ensure Neo4j is installed and accessible via `neo4j` or `cypher-shell`.
 
 #### Download Neo4j:
 
