@@ -65,6 +65,8 @@ run_subnet_cluster<-function(nodes=NULL,edges=NULL,clustersize=30){
 }
 
 
+
+
 run_add_cluster<-function(cfg_t1=NULL,nodes=NULL,edges=NULL,group_name=NULL,
                           diffmessage="NULL"){
   if(length(group_name)>1){

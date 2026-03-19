@@ -38,7 +38,7 @@ To use **ProPhosLinker**, you need to install dependencies in the following orde
 2. Run the following command to import the knowledge graph into Neo4j:
 
 ```bash
-neo4j-admin load --database=neo4j --from="ProPhosLinker/database/neo4j.dump --force
+neo4j-admin database load neo4j --from-path=./ProPhosLinker/database --overwrite-destination=true 
 ````
 
 Make sure to replace `path/to/ProPhosLinker_KG.dump` with the actual path of the dump file.
@@ -53,13 +53,23 @@ Run the following command in your R console to install the required packages:
 
 ```r
 install.packages(c(
-  "optparse", "readr", "stringr", "dplyr", "vegan", "ggrepel", "ggplot2", "NMF", 
-  "tidyverse", "doParallel", "WGCNA", "patchwork", "pheatmap", "plyr", "viridis", 
-  "grid", "flashClust", "ggsankeyfier", "limma", "statmod", "colorspace", 
-  "Mfuzz", "reshape2", "tibble", "igraph", "ggraph", "tidygraph", "tidyr", 
-  "ggforce", "ggpubr", "clusterProfiler", "org.Hs.eg.db", "enrichplot", 
-  "hmisc", "bootnet", "graphlayouts", "scatterpie", "ggsci", "ggnewscale", 
-  "svglite", "ggiraph"
+   "optparse", "readr", "stringr", "dplyr", "vegan", "ggrepel", "ggplot2",
+  "tidyverse", "doParallel", "patchwork", "pheatmap", "plyr",
+  "viridis", "grid", "flashClust", "ggsankeyfier", "statmod", "colorspace",
+  "reshape2", "tibble", "igraph", "ggraph", "tidygraph", "tidyr",
+  "ggforce", "ggpubr", "Hmisc","bootnet", "graphlayouts", "scatterpie",
+  "ggsci", "ggnewscale", "svglite", "ggiraph"
+
+if (!require('BiocManager', quietly = TRUE)) {
+    install.packages('BiocManager', repos='https://mirrors.tuna.tsinghua.edu.cn/CRAN/')
+  }
+
+BiocManager::install(
+    c('NMF', "WGCNA", 'limma', 'Mfuzz', 'clusterProfiler', 'org.Hs.eg.db', 'enrichplot', 'ggtree'),
+    ask = FALSE,
+    update = FALSE,
+    force = TRUE
+  )
 ))
 ```
 

@@ -596,12 +596,16 @@ samplelist <- read.csv(samplelist_path, sep = "\t")
 #' @param run_diffsubnet_enrich Whether to run differential subnetwork enrichment
 #'
 #' @return Network analysis results object
+
+diff_table = read.csv("E:\\DHKLMQ\\diff_table.tsv", sep = '\t')
+# diff_table = NULL
 differential_network1 <- differential_network(
   count_table = count_table,
   samplelist = samplelist,
   compare_group = group_comparing,
   filter_num = filter_num,
   annotation_table = annotation_table,
+  diff_table = diff_table,
   FC_threshold = FC_threshold,
   p_threshold = p_threshold,
   p_value_type = p_value_type,

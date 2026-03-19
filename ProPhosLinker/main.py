@@ -105,7 +105,7 @@ def main(pro_file, phos_file, sample_group, mapping_file,
     # BasicConfig.update_config(identified_type = 'SYMBOL')
     BasicConfig.update_config(disease=disease)
     BasicConfig.update_config(identified_type=identified_type)
-    BasicConfig.update_config(outdir=outdir)
+    BasicConfig.update_config(outdir=Path(outdir).resolve())
     BasicConfig.update_config(group_comparing=group_comparing)
     BasicConfig.update_config(omics1_name=omics1_name)
     BasicConfig.update_config(omics2_name=omics2_name)

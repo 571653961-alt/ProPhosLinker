@@ -268,162 +268,21 @@ enrichment_predata <- function(pro_diff_path, phos_diff_path, phos_pro_path,
 # GO ENRICHMENT COMPARISON FUNCTION
 #===============================================================================
 
-#' Perform and visualize comparative GO enrichment analysis
+#' Perform GO enrichment analysis and save results for two omics datasets
 #'
-#' This function compares GO enrichment between two omics datasets and generates
-#' a dot plot visualization with faceting by GO ontology (BP, MF, CC).
+#' This function performs comparative GO enrichment analysis on two lists of genes from different omics datasets,
+#' saves the results to a TSV file, and generates a dot plot visualizing the enrichment results.
 #'
-#' @param omics1_list Vector of feature IDs for first omics dataset
-#' @param omics2_list Vector of feature IDs for second omics dataset
-#' @param omics1_name Name for first omics dataset
-#' @param omics2_name Name for second omics dataset
-#' @param outdir Output directory
-#' @param pvalueCutoff P-value cutoff for enrichment (default: 0.05)
-#' @param showCategory Number of top categories to show per ontology (default: 15)
-#' @param enrich_fromType ID type for enrichment ('UNIPROT', 'SYMBOL', etc.)
-#' @param color_gradient_low Color for low end of p-value gradient
-#' @param color_gradient_high Color for high end of p-value gradient
-# two_omicses_GO_enrichment <- function(omics1_list, omics2_list,
-#                                       omics1_name, omics2_name,
-#                                       outdir = "./",
-#                                       pvalueCutoff = 0.05, showCategory = 15,
-#                                       enrich_fromType = 'UNIPROT',
-#                                       color_gradient_low = "#175663",
-#                                       color_gradient_high = "#90362d") {
-#   
-#   # Create a named list of gene clusters for comparison
-#   compare_lists <- list(omics1_list, omics2_list)
-#   names(compare_lists) <- c(omics1_name, omics2_name)
-#   
-#   # Perform comparative GO enrichment analysis
-#   go_compare <- compareCluster(
-#     geneClusters = compare_lists,
-#     fun = "enrichGO",
-#     OrgDb = org.Hs.eg.db,
-#     keyType = enrich_fromType,
-#     ont = "ALL",  # Include all three GO ontologies: BP, MF, CC
-#     pAdjustMethod = "BH",
-#     pvalueCutoff = pvalueCutoff,
-#     qvalueCutoff = 0.2
-#   )
-#   
-#   # Extract and save enrichment results
-#   go_compare_data <- as.data.frame(go_compare)
-#   
-#   write.table(
-#     go_compare_data,
-#     file = paste0(outdir, "/", omics1_name, "_", omics2_name, "_GO_enrichment.tsv"),
-#     sep = "\t",
-#     row.names = FALSE,
-#     col.names = TRUE,
-#     quote = FALSE
-#   )
-#   
-#   #---------------------------------------------------------------------------
-#   # Data preprocessing for visualization
-#   #---------------------------------------------------------------------------
-#   go_compare_clean <- go_compare_data %>%
-#     # Calculate numeric GeneRatio and BgRatio for sorting
-#     mutate(
-#       GeneRatio_num = sapply(strsplit(GeneRatio, "/"),
-#                              function(x) as.numeric(x[1]) / as.numeric(x[2])),
-#       BgRatio_num = sapply(strsplit(BgRatio, "/"),
-#                            function(x) as.numeric(x[1]) / as.numeric(x[2])),
-#       FoldEnrichment = GeneRatio_num / BgRatio_num
-#     ) %>%
-#     # Group by ontology and sort by adjusted p-value
-#     group_by(ONTOLOGY) %>%
-#     arrange(p.adjust, .by_group = TRUE) %>%
-#     # Keep top categories per ontology
-#     slice_head(n = showCategory) %>%
-#     ungroup() %>%
-#     # Set factor levels for proper plotting order
-#     mutate(
-#       Description = factor(Description, levels = rev(unique(Description))),
-#       ONTOLOGY = factor(ONTOLOGY, levels = c("BP", "MF", "CC"))
-#     ) %>%
-#     arrange(desc(GeneRatio_num), .by_group = TRUE) %>%
-#     mutate(
-#       Description = factor(Description, levels = rev(unique(Description))),
-#       ONTOLOGY = factor(ONTOLOGY, levels = c("BP", "MF", "CC")),
-#       GeneRatio_factor = as.factor(GeneRatio_num)  # Optional factor version
-#     )
-#   
-#   #---------------------------------------------------------------------------
-#   # Create GO enrichment dot plot
-#   #---------------------------------------------------------------------------
-#   go_compare_GO <- ggplot(go_compare_clean, aes(x = Cluster, y = Description)) +
-#     
-#     # Add points with size = gene count, color = adjusted p-value
-#     geom_point(aes(size = Count, color = p.adjust), alpha = 0.8) +
-#     
-#     # Facet by GO ontology with free y-axis scales
-#     facet_grid(ONTOLOGY ~ .,
-#                scales = "free_y",
-#                space = "free_y") +
-#     
-#     # Color gradient for p-values (log10 scale for better visualization)
-#     scale_color_gradient(low = color_gradient_low, high = color_gradient_high,
-#                          name = "Adjusted P-value",
-#                          trans = "log10") +
-#     
-#     # Size scale for point sizes
-#     scale_size_continuous(range = c(2, 8),
-#                           name = paste0(omics1_name, "/", omics2_name, " Count"),
-#                           guide = guide_legend(
-#                             override.aes = list(color = "grey60")
-#                           )) +
-#     
-#     # Axis labels and title
-#     labs(x = "Protein Ratio",
-#          y = "",
-#          title = paste0("GO Enrichment Comparison: ", omics1_name, "  vs ", omics2_name)) +
-#     
-#     # Theme customization
-#     theme_bw() +
-#     theme(
-#       # Title settings
-#       plot.title = element_text(hjust = 0.5, face = "bold", size = 16,
-#                                 margin = margin(b = 20)),
-#       
-#       # Facet strip settings
-#       strip.text = element_text(size = 12, face = "bold",
-#                                 margin = margin(t = 5, r = 5, b = 5, l = 5)),
-#       strip.background = element_rect(fill = "lightgray"),
-#       
-#       # Axis settings
-#       axis.text.x = element_text(size = 10, color = "grey20", face = "bold"),
-#       axis.text.y = element_text(size = 10, color = "grey20", face = "bold"),
-#       axis.title.x = element_text(size = 10, face = "bold",
-#                                   margin = margin(t = 15)),
-#       
-#       # Legend settings
-#       legend.title = element_text(size = 10, face = "bold"),
-#       legend.text = element_text(size = 8),
-#       legend.key.size = unit(0.8, "cm"),
-#       
-#       # Grid and margins
-#       panel.grid.major = element_line(color = "grey90", linewidth = 0.5),
-#       panel.grid.minor = element_blank(),
-#       plot.margin = margin(1, 1, 1, 1, "cm")
-#     ) +
-#     
-#     # Legend customization
-#     guides(
-#       fill = guide_colorbar(barheight = unit(4, "cm")),
-#       shape = guide_legend(
-#         override.aes = list(
-#           fill = "grey80",
-#           size = 6,
-#           stroke = 0.5
-#         )
-#       )
-#     )
-#   
-#   # Save plot to file
-#   ggsave(paste0(outdir, "/", omics1_name, "_", omics2_name, "_GO_enrichment.png"),
-#          go_compare_GO, width = 12, height = 8, dpi = 300)
-# }
+#' @param omics1_list List of gene IDs for the first omics dataset.
+#' @param omics2_list List of gene IDs for the second omics dataset.
+#' @param omics1_name Name of the first omics dataset (used in output filenames and legends).
+#' @param omics2_name Name of the second omics dataset (used in output filenames and legends).
+#' @param outdir Directory where the output files will be saved.
+#' @param pvalueCutoff P-value cutoff for significance (default: 0.05).
+#' @param showCategory Number of top categories to display per ontology (default: 15).
+#' @param enrich_fromType Key type for gene annotation (default: 'UNIPROT').
+#' @param color_gradient_low Color for low -log10(p-adjust) values (default: "#175663").
+#' @param color_gradient_high Color for high -log10(p-adjust) values (default: "#90362d").
 
 two_omicses_GO_enrichment <- function(omics1_list, omics2_list,
                                       omics1_name, omics2_name,
@@ -566,25 +425,27 @@ two_omicses_GO_enrichment <- function(omics1_list, omics2_list,
   ggsave(paste0(outdir, "/", omics1_name, "_", omics2_name, "_GO_enrichment.png"),
          go_compare_GO, width = 12, height = 8, dpi = 300)
 }
+
 #===============================================================================
 # KEGG ENRICHMENT COMPARISON FUNCTION
 #===============================================================================
 
-#' Perform and visualize comparative KEGG enrichment analysis
+#' Perform KEGG enrichment analysis and save results for two omics datasets
 #'
-#' This function performs KEGG pathway enrichment comparison between two omics
-#' datasets using clusterProfiler.
+#' This function performs comparative KEGG enrichment analysis on two lists of genes from different omics datasets,
+#' saves the results to a TSV file, and generates a dot plot visualizing the enrichment results.
 #'
-#' @param omics1_list Vector of feature IDs for first omics dataset
-#' @param omics2_list Vector of feature IDs for second omics dataset
-#' @param omics1_name Name for first omics dataset
-#' @param omics2_name Name for second omics dataset
-#' @param outdir Output directory
-#' @param pvalueCutoff P-value cutoff (default: 0.05)
-#' @param showCategory Number of top categories to show (default: 15)
-#' @param enrich_fromType ID type ('UNIPROT' or 'SYMBOL')
-#' @param color_gradient_low Low end color
-#' @param color_gradient_high High end color
+#' @param omics1_list List of gene IDs for the first omics dataset.
+#' @param omics2_list List of gene IDs for the second omics dataset.
+#' @param omics1_name Name of the first omics dataset (used in output filenames and legends).
+#' @param omics2_name Name of the second omics dataset (used in output filenames and legends).
+#' @param outdir Directory where the output files will be saved.
+#' @param pvalueCutoff P-value cutoff for significance (default: 0.05).
+#' @param showCategory Number of top categories to display (default: 15).
+#' @param enrich_fromType Key type for gene annotation (default: 'UNIPROT').
+#' @param color_gradient_low Color for low -log10(p-adjust) values (default: "#175663").
+#' @param color_gradient_high Color for high -log10(p-adjust) values (default: "#90362d").
+
 two_omicses_KEGG_enrichment <- function(omics1_list, omics2_list,
                                         omics1_name, omics2_name,
                                         outdir = "./",
@@ -656,7 +517,8 @@ two_omicses_KEGG_enrichment <- function(omics1_list, omics2_list,
                              function(x) as.numeric(x[1]) / as.numeric(x[2])),
       BgRatio_num = sapply(strsplit(BgRatio, "/"),
                            function(x) as.numeric(x[1]) / as.numeric(x[2])),
-      FoldEnrichment = GeneRatio_num / BgRatio_num
+      FoldEnrichment = GeneRatio_num / BgRatio_num,
+      log_p_adjust = -log10(p.adjust)  # Add -log10(p.adjust) column
     ) %>%
     # Sort and select top categories
     arrange(p.adjust, .by_group = TRUE) %>%
@@ -673,13 +535,12 @@ two_omicses_KEGG_enrichment <- function(omics1_list, omics2_list,
   #---------------------------------------------------------------------------
   p_kk_compare <- ggplot(kk_compare_data_clean, aes(x = Cluster, y = Description)) +
     
-    # Add points with size = gene count, color = adjusted p-value
-    geom_point(aes(size = Count, color = p.adjust), alpha = 0.8) +
+    # Add points with size = gene count, color = -log10(adjusted p-value)
+    geom_point(aes(size = Count, color = log_p_adjust), alpha = 0.8) +
     
-    # Color gradient for p-values
+    # Color gradient for -log10(p-values)
     scale_color_gradient(low = color_gradient_low, high = color_gradient_high,
-                         name = "Adjusted P-value",
-                         trans = "log10") +
+                         name = "-log10(Adjusted P-value)") +
     
     # Size scale for points
     scale_size_continuous(range = c(2, 8),
@@ -691,7 +552,7 @@ two_omicses_KEGG_enrichment <- function(omics1_list, omics2_list,
     # Labels and title
     labs(x = "Protein Ratio",
          y = "",
-         title = paste0("KEGG Enrichment Comparison: ", omics1_name, "  vs ", omics2_name)) +
+         title = paste0("KEGG Enrichment Comparison: ", omics1_name, " vs ", omics2_name)) +
     
     # Theme customization
     theme_bw() +

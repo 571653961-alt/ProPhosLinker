@@ -215,53 +215,6 @@ class CustomInstallCommand(install):
         
         print(f"📊 R package installation complete: {installed_count}/{len(r_packages)}")
 
-    def import_neo4j_data(self):
-        """Import Neo4j database data"""
-        try:
-            print("\n4. Importing Neo4j data...")
-            
-            # Get current directory
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            
-            zip_path = os.path.join(current_dir, 'ProPhosLinker', 'database', 'dataload', 'protein_disease_full_subgraph.zip')
-            # Check if ZIP file exists
-            if not os.path.exists(zip_path):
-                print(f"❌ ZIP file not found: {zip_path}")
-                return False
-            print(f"🔍 Found data file: {zip_path}")
-
-            # Extract ZIP
-            with zipfile.ZipFile(zip_path, 'r') as z:
-                # Check ZIP contents
-                file_list = z.namelist()
-                cypher_files = [f for f in file_list if f.endswith('.cypher')]
-                
-                if not cypher_files:
-                    print("❌ No .cypher files found in ZIP")
-                    return False
-                
-                cypher_filename = cypher_files[0]
-                z.extract(cypher_filename, current_dir)
-            
-            print(f"✅ File extracted successfully: {cypher_filename}")
-
-            print("\n🔐 Enter Neo4j database credentials:")
-            username = input("   Username (default: neo4j): ").strip() or "neo4j"
-            password = getpass.getpass("   Password (default: neo4j): ")
-            if not password:
-                password = 'neo4j'
-
-            cypher_file = os.path.join(current_dir, cypher_filename)
-            # Check if Neo4j service is running
-            if not self.check_neo4j_service():
-                print("❌ Neo4j service not running, please start Neo4j first")
-                return False
-            
-            return True
-        except Exception as e:
-            print(f"❌ Data import error: {e}")
-            return False
-    
     def check_neo4j_service(self):
         """Check if Neo4j service is running"""
         try:
@@ -302,6 +255,7 @@ except:
         "scipy>=1.10.0",
         "scikit-learn>=1.3.0",
         "statsmodels>=0.14.0",
+        "requests>= 2.25.0",
         
         # Visualization
         "matplotlib>=3.7.0",
@@ -362,8 +316,7 @@ setup(
     install_requires=requirements,
     entry_points={
         "console_scripts": [
-            "ProPhosLinker=ProPhosLinker.cli:main",
-            "ProPhosLinker-import=ProPhosLinker.tools.neo4j_import:main",
+            "ProPhosLinker=ProPhosLinker.cli:main"
         ],
     },
     include_package_data=True,
