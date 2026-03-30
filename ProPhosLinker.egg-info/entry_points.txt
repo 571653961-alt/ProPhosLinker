@@ -1,0 +1,2 @@
+[console_scripts]
+ProPhosLinker = ProPhosLinker.cli:main

@@ -11,12 +11,12 @@ pa:
   dim_rd_mtd: "PCA"
 
 nmf:
-  NMF_pro_filter_num: 1000
-  NMF_phos_filter_num: 1000
+  NMF_pro_filter_num: 3000
+  NMF_phos_filter_num: 3000
 
 wgcna:
-  WGCNA_pro_filter_num: 3000
-  WGCNA_phos_filter_num: 3000
+  WGCNA_pro_filter_num: 10000
+  WGCNA_phos_filter_num: 10000
   protein_cor_method: "spearman"
   protein_corFun_tmp: "bicor"
   protein_cluster_method: "average"
@@ -33,7 +33,7 @@ wgcna:
   phosphoprotein_mergingThresh: 0.2
   phosphoprotein_minModuleSize: 10
   phosphoprotein_SoftPower: 6
-  module_cor_threshhold: "0.4"
+  module_cor_threshhold: "0"
   module_cor_p_adj: "0.05"
   module_cor_method: "spearman"
 
@@ -46,7 +46,7 @@ phosphorate:
   top_tail_diff_site_num: 20
 
 differential_network:
-  differential_network_filter_num: 100
+  differential_network_filter_num: 2000
   differential_network_FC_threshold: 2
   differential_network_p_threshold: 0.05
   differential_network_p_value_type: "q_value"

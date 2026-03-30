@@ -164,8 +164,6 @@ def main(pro_file, phos_file, sample_group, mapping_file,
             sample_group=BasicConfig.outdir / Path(ResultDirConfig.data_preprocessing) / Path('sample_list.tsv'),
             prodiff=prodiff_path,
             phosdiff=phosdiff_path,
-            differential_network_diff_pro_path=BasicConfig.outdir / Path(ResultDirConfig.omics_differential_analysis) / Path(BasicConfig.group_comparing.replace(':', '_vs_') + '_' + BasicConfig.omics1_name + '.tsv'),
-            differential_network_diff_phos_path=BasicConfig.outdir / Path(ResultDirConfig.omics_differential_analysis) / Path(BasicConfig.group_comparing.replace(':', '_vs_') + '_' + BasicConfig.omics2_name + '.tsv')
         )
         # 3. Functional analysis config
         neo4j_mgr = Neo4jManager(
