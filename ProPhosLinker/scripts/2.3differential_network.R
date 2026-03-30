@@ -475,23 +475,16 @@ if (!is.null(opt$fill_gradientn_color)) {
 #===============================================================================
 
 # Load all required function scripts
-source(file.path(script_path, "run_color.R"))
 source(file.path(script_path, "run_predata.R"))
 source(file.path(script_path, "run_diff.R"))
 source(file.path(script_path, "run_corStability.R"))
 source(file.path(script_path, "run_conditional_network.R"))
 source(file.path(script_path, "run_diff_network.R"))
-source(file.path(script_path, "run_enrichment.R"))
 source(file.path(script_path, "run_cluster.R"))
 source(file.path(script_path, "differential_network.R"))
-source(file.path(script_path, "run_mediation.R"))
 source(file.path(script_path, "network_show.R"))
 source(file.path(script_path, "run_prenetwork.R"))
-source(file.path(script_path, "run_diff_enrichment.R"))
 source(file.path(script_path, "pipline_save.R"))
-source(file.path(script_path, "run_diffsubnet_enrichment.R"))
-source(file.path(script_path, "differential_subnetwork_plot.R"))
-source(file.path(script_path, "diff_net_community_detection_plot.R"))
 source(file.path(script_path, "..", "3.2functional_enrichment_function.R"))
 
 #===============================================================================
@@ -501,6 +494,17 @@ source(file.path(script_path, "..", "3.2functional_enrichment_function.R"))
 suppressWarnings(suppressPackageStartupMessages(library(dplyr)))
 suppressWarnings(suppressPackageStartupMessages(library(readr)))
 suppressWarnings(suppressPackageStartupMessages(library(ggplot2)))
+suppressWarnings(suppressPackageStartupMessages(library(igraph)))
+suppressWarnings(suppressPackageStartupMessages(library(ggraph)))
+suppressWarnings(suppressPackageStartupMessages(library(tidygraph)))
+suppressWarnings(suppressPackageStartupMessages(library(tidyr)))
+suppressWarnings(suppressPackageStartupMessages(library(ggforce)))
+suppressWarnings(suppressPackageStartupMessages(library(ggpubr)))
+suppressWarnings(suppressPackageStartupMessages(library(tibble)))
+suppressWarnings(suppressPackageStartupMessages(library(tidyverse)))
+suppressWarnings(suppressPackageStartupMessages(library(ggplot2)))
+suppressWarnings(suppressPackageStartupMessages(library(patchwork)))
+
 
 #===============================================================================
 # DATA LOADING AND PREPROCESSING
@@ -522,6 +526,15 @@ if (diff_pro_path != "") {
   diff_pro <- read.csv(diff_pro_path, sep = '\t')
   diff_pro_ids <- diff_pro[diff_pro$class != 'Non-significant', ][[omics1_name]]
   pro <- pro[pro[[omics1_name]] %in% diff_pro_ids, ]
+  diff_pro_table <- data.frame(
+    feature_ID = diff_pro[[omics1_name]],
+    Log2FC     = diff_pro$logFC,
+    p_value    = diff_pro$P.Value,
+    q_value    = diff_pro$adj.P.Val,
+    State      = diff_pro$class
+  )
+  diff_pro_table$FC <- 2^(diff_pro_table$Log2FC)
+  
 }
 
 # Filter phosphoproteomics data to keep only differentially expressed phosphosites
@@ -529,7 +542,16 @@ if (diff_phos_path != "") {
   diff_phos <- read.csv(diff_phos_path, sep = '\t')
   diff_phos_ids <- diff_phos[diff_phos$class != 'Non-significant', ][[omics2_name]]
   phos <- phos[phos[[omics2_name]] %in% diff_phos_ids, ]
+  diff_phos_table <- data.frame(
+    feature_ID = diff_phos[[omics2_name]],
+    Log2FC     = diff_phos$logFC,
+    p_value    = diff_phos$P.Value,
+    q_value    = diff_phos$adj.P.Val,
+    State      = diff_phos$class
+  )
+  diff_phos_table$FC <- 2^(diff_phos_table$Log2FC)
 }
+diff_table <- rbind(diff_pro_table, diff_phos_table)
 
 #---------------------------------------------------------------------------
 # Standardize column names
@@ -591,14 +613,11 @@ samplelist <- read.csv(samplelist_path, sep = "\t")
 #' @param edge_FC_threshold Fold change threshold for differential edges
 #' @param edge_p_threshold P-value threshold for differential edges
 #' @param run_enrich Whether to run enrichment analysis
-#' @param run_mediation Whether to run mediation analysis
 #' @param species Species for enrichment analysis
 #' @param run_diffsubnet_enrich Whether to run differential subnetwork enrichment
 #'
 #' @return Network analysis results object
 
-diff_table = read.csv("E:\\DHKLMQ\\diff_table.tsv", sep = '\t')
-# diff_table = NULL
 differential_network1 <- differential_network(
   count_table = count_table,
   samplelist = samplelist,
@@ -617,7 +636,6 @@ differential_network1 <- differential_network(
   edge_FC_threshold = edge_FC_threshold,
   edge_p_threshold = edge_p_threshold,
   run_enrich = FALSE,
-  run_mediation = FALSE,
   species = "hsa",
   run_diffsubnet_enrich = FALSE
 )
@@ -652,6 +670,8 @@ differential_network1 <- differential_network(
 #' @param color_gradient_low Low end color for enrichment gradient
 #' @param color_gradient_high High end color for enrichment gradient
 #' @param fill_gradientn_color Gradient colors for fill
+#'
+
 pipline_save(
   Network = differential_network1,
   outdir = outdir,

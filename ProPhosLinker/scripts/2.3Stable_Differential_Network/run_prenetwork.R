@@ -1,49 +1,60 @@
-#' Construct a preliminary correlation network from a feature count table and extract top-connected features.
+#' Run pre-network analysis for microbiome/transcriptomics data
 #'
-#' This function computes pairwise correlations (Spearman or Pearson) among features (e.g., genes, taxa)
-#' across samples in a given group, constructs an undirected correlation network using igraph,
-#' filters edges based on correlation strength and p-value thresholds, and then selects the top
-#' features by node degree (connectivity) up to a specified limit (`filter_num`). The result is
-#' encapsulated in a `PreCor` S4 object for downstream analysis.
+#' This function calculates correlations between features from an abundance table,
+#' filters edges based on correlation and significance thresholds, constructs a network,
+#' and selects top features based on node degree. Results are returned as a PreCor S4 object.
 #'
-#' @param count_table A data frame with rows as features (must include a column named `feature_ID`)
-#'                    and columns as samples. Numeric values represent feature abundances or counts.
-#' @param group_name A character vector specifying the name(s) of the biological/experimental group(s).
-#'                   If multiple names are provided, they will be collapsed into a single label using "-vs-".
-#' @param cor_method Correlation method passed to `Hmisc::rcorr()`. Default is `"spearman"`.
-#'                   Other options include `"pearson"`.
-#' @param R_threshold Minimum absolute correlation coefficient to retain an edge. Default is `0.8`.
-#' @param p_threshold Maximum unadjusted p-value to retain an edge. Default is `0.05`.
-#' @param filter_num Maximum number of top-connected nodes (features) to retain after network construction.
-#'                   Default is `1000`.
+#' @param count_table data.frame, containing a 'feature_ID' column and multiple sample columns
+#'                    (abundance values). Rows represent features, columns represent samples.
+#' @param group_name character, group label for result identification. If length > 1,
+#'                    joined with "-vs-".
+#' @param cor_method character, correlation method passed to Hmisc::rcorr. Options:
+#'                    "pearson" or "spearman" (default).
+#' @param R_threshold numeric, absolute correlation coefficient threshold. Edges with
+#'                     |cor| > R_threshold are retained. Default 0.8.
+#' @param p_threshold numeric, adjusted P-value threshold. Edges with padj < p_threshold
+#'                     are retained. Default 0.05.
+#' @param filter_num numeric, maximum number of features to retain based on node degree.
+#'                    Default 1000.
 #'
-#' @return An object of S4 class `PreCor`, containing:
-#'   \describe{
-#'     \item{group_name}{The formatted group comparison label.}
-#'     \item{precor}{A list with: `nodes`, `raw_edges` (all pairwise correlations), `edges` (filtered edges),
-#'                   and `node_degrees` (connectivity scores).}
-#'     \item{filter_num}{The requested maximum number of top nodes.}
-#'     \item{filter_table}{Subset of `count_table` containing only the top-connected features.}
-#'   }
+#' @return A PreCor S4 object with the following slots:
+#'   \item{group_name}{character, group name}
+#'   \item{precor}{list, containing nodes (data.frame), edges (data.frame),
+#'                 node_degrees (named numeric vector)}
+#'   \item{filter_num}{numeric, actual node count limit used for filtering}
+#'   \item{filter_table}{data.frame, filtered abundance table with high-degree features
+#'                       (includes feature_ID column)}
 #'
-#' @importFrom dplyr filter select
-#' @importFrom stats p.adjust
+#' @details 
+#' Analysis steps:
+#' 1. Transpose count_table to sample × feature matrix and compute correlation matrix
+#'    using Hmisc::rcorr.
+#' 2. Convert correlation matrix to edge list and adjust P-values using p.adjust
+#'    (method = "none").
+#' 3. Filter edges by R_threshold and p_threshold, then construct an igraph network.
+#' 4. Calculate node degree, select top filter_num features by degree, and return
+#'    the filtered abundance table.
+#'
+#' @importFrom dplyr select filter
+#' @importFrom Hmisc rcorr
 #' @importFrom igraph graph_from_data_frame degree
-#' @import Hmisc
-#' @import igraph
-#' @import dplyr
 #'
 #' @examples
-#' # Example count table
-#' count_table <- data.frame(
-#'   feature_ID = c("GeneA", "GeneB", "GeneC"),
-#'   Sample1 = c(10, 20, 30),
-#'   Sample2 = c(15, 25, 35),
-#'   Sample3 = c(12, 22, 32)
+#' \dontrun{
+#' # Example analysis with count_data containing feature_ID column
+#' res <- run_prenetwork(
+#'   count_table = count_data,
+#'   group_name = "TreatmentA",
+#'   cor_method = "spearman",
+#'   R_threshold = 0.7,
+#'   p_threshold = 0.01,
+#'   filter_num = 500
 #' )
-#' result <- run_prenetwork(count_table, group_name = "Treatment", R_threshold = 0.7, filter_num = 2)
-#' print(result@group_name)
-#' head(result@filter_table)
+#' # Check number of edges in network
+#' nrow(res@precor$edges)
+#' # View filtered feature table
+#' head(res@filter_table)
+#' }
 #'
 #' @export
 
@@ -101,7 +112,6 @@ run_prenetwork<-function(count_table=NULL,group_name=NULL,cor_method="spearman",
       # raw_table = raw_table,
       precor = list(
         nodes = nodes,
-        raw_edges=t_its_cor_df,
         edges = edges,
         node_degrees=node_degrees
       ),

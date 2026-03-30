@@ -1,46 +1,68 @@
-#' Prepare and validate input data for downstream analysis by aligning count table with sample metadata.
+#' Prepare and validate data for pre-network analysis
 #'
-#' This function integrates a feature count table (e.g., gene expression, microbial abundance)
-#' with a sample annotation list (`samplelist`), performs basic validation, removes duplicates,
-#' ensures column consistency, and returns a standardized S4 object of class `PreData`.
-#' It also checks for minimal sample size and verifies required columns.
+#' This function validates and preprocesses count tables and sample metadata
+#' for downstream network analysis. It filters samples based on group information,
+#' removes duplicates, ensures proper data types, and returns a structured PreData
+#' S4 object.
 #'
-#' @param count_table A data frame where rows represent features (must contain a column named `feature_ID`)
-#'                    and columns represent samples. All sample columns should be numeric or coercible to numeric.
-#' @param samplelist A data frame containing at least two columns: `sample` (sample identifiers) and `group`
-#'                   (group labels). Duplicate samples are removed, keeping the first occurrence.
-#' @param group_name Optional character vector specifying which group(s) to retain from `samplelist`.
-#'                   If multiple names are provided, they are collapsed into a single label using "-vs-".
-#'                   If `NULL`, all samples in `samplelist` are used and the group name defaults to `"data"`.
+#' @param count_table data.frame, containing a 'feature_ID' column (feature identifiers)
+#'                    and abundance values for each sample as additional columns.
+#' @param samplelist data.frame, sample metadata containing at least two columns:
+#'                    'sample' (sample identifiers matching count_table column names)
+#'                    and 'group' (group assignments for each sample).
+#' @param group_name character, optional. Group name(s) to filter samples.
+#'                    If NULL, all samples are kept. If length > 1, group names
+#'                    are joined with "-vs-" for labeling.
 #'
-#' @return An object of S4 class `PreData` with slots:
-#'   \describe{
-#'     \item{group_name}{A formatted character string representing the selected group(s).}
-#'     \item{samplelist}{The filtered and deduplicated sample metadata data frame.}
-#'     \item{count_table}{The cleaned count table containing only `feature_ID` and selected samples, with numeric values.}
-#'   }
+#' @return A PreData S4 object with the following slots:
+#'   \item{group_name}{character, processed group label for result identification}
+#'   \item{samplelist}{data.frame, filtered and deduplicated sample metadata}
+#'   \item{count_table}{data.frame, filtered abundance table with feature_ID column
+#'                      and sample columns matching the filtered samplelist}
 #'
-#' @importFrom dplyr distinct filter select mutate across all_of sym
-#' @import dplyr
+#' @details 
+#' Processing steps:
+#' 1. If group_name is provided, filter samplelist to include only specified groups.
+#'    Otherwise, set default group name to "data".
+#' 2. Validate samplelist contains required 'sample' and 'group' columns.
+#' 3. Remove duplicate samples from samplelist (keeping first occurrence).
+#' 4. Check for empty samplelist after filtering; stop if no samples remain.
+#' 5. Issue warning if sample size < 5 (may affect statistical stability).
+#' 6. Validate count_table contains 'feature_ID' column.
+#' 7. Remove duplicate feature IDs from count_table (keeping first occurrence).
+#' 8. Subset count_table to only include samples present in filtered samplelist.
+#' 9. Convert all abundance columns to numeric type.
+#'
+#' @importFrom dplyr distinct filter select mutate across sym all_of
+#' @importFrom rlang !! sym
 #'
 #' @examples
-#' # Example count table
-#' count_table <- data.frame(
+#' \dontrun{
+#' # Prepare data with group filtering
+#' sample_meta <- data.frame(
+#'   sample = c("S1", "S2", "S3", "S4"),
+#'   group = c("Control", "Control", "Treatment", "Treatment")
+#' )
+#' 
+#' count_data <- data.frame(
 #'   feature_ID = c("Gene1", "Gene2", "Gene3"),
 #'   S1 = c(10, 20, 30),
-#'   S2 = c(15, 25, 35),
-#'   S3 = c(12, 22, 32)
+#'   S2 = c(12, 22, 32),
+#'   S3 = c(15, 25, 35),
+#'   S4 = c(18, 28, 38)
 #' )
 #' 
-#' # Example sample list
-#' samplelist <- data.frame(
-#'   sample = c("S1", "S2", "S3"),
-#'   group = c("Control", "Control", "Treatment")
+#' # Keep only Control group
+#' pre_data <- run_predata(
+#'   count_table = count_data,
+#'   samplelist = sample_meta,
+#'   group_name = "Control"
 #' )
 #' 
-#' predata_obj <- run_predata(count_table, samplelist, group_name = "Control")
-#' print(predata_obj@group_name)
-#' head(predata_obj@count_table)
+#' # Access filtered data
+#' head(pre_data@count_table)
+#' pre_data@samplelist
+#' }
 #'
 #' @export
 setClass("PreData", slots = c(

@@ -1,63 +1,117 @@
-#' S4 class to store two condition-specific stable networks for comparative analysis.
+#' Conditional Network S4 Class
 #'
-#' This class holds the comparison label (e.g., "Tumor-vs-Normal") and two network objects:
-#' one for the case/experimental group and one for the control group, each of class \code{StableNetwork}.
+#' An S4 class that stores paired network results for two experimental conditions,
+#' enabling direct comparison of network structures between case and control groups.
 #'
-#' @slot group_name Character string describing the group comparison (formatted as "A-vs-B").
-#' @slot network_case Object of class \code{StableNetwork} for the first group (case/experimental).
-#' @slot network_control Object of class \code{StableNetwork} for the second group (control).
+#' @slot group_name character, comparison label describing the two conditions
+#'                   (e.g., "Treatment-vs-Control").
+#' @slot network_case ANY, network result object (typically BootnetResult) for
+#'                    the experimental/case group.
+#' @slot network_control ANY, network result object (typically BootnetResult) for
+#'                      the control group.
+#'
 #' @name Conditional_network-class
 #' @rdname Conditional_network-class
-#' @exportClass Conditional_network
-
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Create a conditional network object
+#' cond_net <- new("Conditional_network",
+#'   group_name = "Treatment-vs-Control",
+#'   network_case = case_network_result,
+#'   network_control = control_network_result
+#' )
+#' 
+#' # Access components
+#' cond_net@group_name
+#' case_net <- cond_net@network_case
+#' control_net <- cond_net@network_control
+#' }
 setClass("Conditional_network", slots = c(
   group_name="character",
+#  Conditional_network_layout="ANY",
   network_case = "ANY",
   network_control = "ANY"
 ))
 
-#' Construct condition-specific stable correlation networks for two groups.
+#' Build conditional networks comparing two experimental conditions
 #'
-#' This function splits the input count data by experimental and control groups (defined in \code{samplelist}),
-#' then builds a bootstrapped stable correlation network for each group using \code{run_corStability}.
-#' It ensures both networks share the same node set (intersection based on edges) and aligns their edge tables
-#' to enable downstream differential network analysis.
+#' This function constructs and compares correlation networks between experimental
+#' and control groups. It performs bootstrap stability analysis on both networks,
+#' then aligns edges to enable direct comparison of correlation patterns across
+#' conditions.
 #'
-#' @param count_table A data frame with rows as features (must include column \code{feature_ID}) and columns as samples.
-#' @param samplelist A data frame with columns \code{group} and \code{sample}, mapping each sample to its group.
-#' @param compare_group A character string in the format "Case:Control" specifying which groups to compare.
-#' @param Diff_anno Optional annotation data frame (e.g., differential expression results) used to annotate nodes.
-#' @param node_list Optional character vector of feature IDs to restrict analysis to.
-#' @param cor_method Correlation method (e.g., "spearman") passed to \code{run_corStability}.
-#' @param nBoots Number of bootstrap iterations for stability assessment (default: 50).
-#' @param nCores Number of CPU cores for parallel computation; if NULL, auto-detected.
-#' @param stability_threshold Maximum CI range for an edge to be considered stable (default: 0.2).
-#' @param bootnet_R_threshold Minimum absolute correlation to retain an edge (default: 0).
+#' @param count_table data.frame, containing a 'feature_ID' column and abundance
+#'                    values for each sample as additional columns.
+#' @param samplelist data.frame, sample metadata containing 'sample' and 'group'
+#'                   columns for group assignment.
+#' @param compare_group character, comparison specification in format
+#'                      "Experimental_group:Control_group". Groups can be combined
+#'                      using "+" (e.g., "Treatment1+Treatment2:Control").
+#' @param Diff_anno data.frame, annotation table for features (e.g., differential
+#'                  expression results) used for node coloring and labeling.
+#' @param node_list character vector, optional. Subset of features to include in
+#'                  network analysis. If NULL, all features are used.
+#' @param cor_method character, correlation method. Options: "pearson" or "spearman".
+#'                   Default "spearman".
+#' @param nBoots integer, number of bootstrap resamples for stability analysis.
+#'               Default 50.
+#' @param nCores integer, number of CPU cores for parallel processing. If NULL,
+#'               detects available cores automatically.
+#' @param stability_threshold numeric, threshold for edge stability (0-1). Edges
+#'                             with stability below this threshold are filtered out.
+#'                             Default 0.2.
+#' @param bootnet_R_threshold numeric, correlation threshold for bootnet network
+#'                             construction. Default 0.
 #'
-#' @return An object of class \code{Conditional_network} containing two aligned \code{StableNetwork} objects,
-#'         or \code{NULL} if either group fails to produce a valid network.
+#' @return A Conditional_network S4 object with the following slots:
+#'   \item{group_name}{character, comparison label (e.g., "Treatment-vs-Control")}
+#'   \item{network_case}{BootnetResult object, stable network for experimental group}
+#'   \item{network_control}{BootnetResult object, stable network for control group}
 #'
-#' @importFrom dplyr select filter distinct rename left_join
-#' @importFrom tidyr drop_na
-#' @importFrom tibble as_tibble_col
-#' @importFrom stringr str_split
-#' @importFrom purrr map_int
-#' @import dplyr
+#' @details
+#' Analysis steps:
+#' 1. Parse compare_group to identify experimental and control groups.
+#' 2. Split count_table into case and control subsets using run_conditional_data.
+#' 3. Build stable networks for each group using run_corStability.
+#' 4. Extract and compare edges from both networks.
+#' 5. Align edge sets to ensure both networks contain identical node pairs.
+#' 6. Filter nodes to only those present in aligned edges.
+#' 7. Return combined conditional network object.
+#'
+#' @importFrom dplyr full_join distinct rename select filter left_join
+#' @importFrom tidyr separate
 #'
 #' @examples
-#' # Assuming proper count_table, samplelist, and annotation are available
-#' # cond_net <- run_conditional_network(count_table, samplelist, compare_group = "T:N")
+#' \dontrun{
+#' # Build conditional networks comparing Treatment vs Control
+#' cond_network <- run_conditional_network(
+#'   count_table = abundance_data,
+#'   samplelist = sample_metadata,
+#'   compare_group = "Treatment:Control",
+#'   Diff_anno = differential_results,
+#'   cor_method = "spearman",
+#'   nBoots = 100,
+#'   stability_threshold = 0.3
+#' )
+#' 
+#' # Access networks for each condition
+#' case_network <- cond_network@network_case
+#' control_network <- cond_network@network_control
+#' }
 #'
 #' @export
-
 run_conditional_network<-function(count_table=NULL,samplelist=NULL,compare_group=NULL,Diff_anno=NULL,node_list=NULL,
                                   cor_method="spearman",nBoots=50,nCores=NULL,stability_threshold=0.2,bootnet_R_threshold=0){
   #compare_group:Experimental group:control group
   comparison<-gsub(":","-vs-", compare_group)
   cgroup <-unlist(strsplit(x = compare_group, split = ":"))
+
   conditional_count_table<-run_conditional_data(count_table=count_table,samplelist=samplelist,compare_group=compare_group,node_list=node_list)
   count_table_case<-conditional_count_table$count_table_case
   count_table_control<-conditional_count_table$count_table_control
+
   network_case<-run_corStability(count_table = count_table_case, group_name = cgroup[1], annotation_table = Diff_anno,
   cor_method = cor_method, nBoots = nBoots, nCores = nCores, bootnet_R_threshold=bootnet_R_threshold,
   stability_threshold = stability_threshold,
@@ -67,12 +121,13 @@ run_conditional_network<-function(count_table=NULL,samplelist=NULL,compare_group
                                  stability_threshold = stability_threshold,
                                  node_list = node_list,uniform_layout=TRUE)
   
+
   if(all(is.null(network_control)) || all(is.null(network_case)) ){
   return(NULL)
   }
   control_edge<-network_control@bootnet_result_filter@bootnet_edge
   case_edge<-network_case@bootnet_result_filter@bootnet_edge  
-  cor_data_all1<-run_compare_edge(case_edge) |> 
+  cor_data_all1<-run_compare_edge(case_edge) |> #run_diff_network.R
     dplyr::distinct(from_to, .keep_all = TRUE) |>
     dplyr::rename(cor_case=cor) |>
     dplyr::rename(CIrange_case=CIrange) |>
@@ -91,20 +146,29 @@ run_conditional_network<-function(count_table=NULL,samplelist=NULL,compare_group
   network_case@bootnet_result_filter@bootnet_node<-network_case@bootnet_result_filter@bootnet_node |>
     dplyr::filter(node %in% union(cor_data_all$from,cor_data_all$to))
   
+
   edgeboth<-cor_data_all|>
     dplyr::select(from,to,from_to)
   controledge <-run_compare_edge(network_control@bootnet_result_filter@bootnet_edge) |>
     dplyr::select(-from,-to)
   caseedge <-run_compare_edge(network_case@bootnet_result_filter@bootnet_edge) |>
     dplyr::select(-from,-to)
+  #edgeboth<-data.frame(from_to=union(controledge$from_to,caseedge$from_to)) 
   network_control@bootnet_result_filter@bootnet_edge<-edgeboth |>
     dplyr::left_join(controledge,by=c("from_to"="from_to")) |>
+   # dplyr::select(-from,-to) |>
+   # tidyr::separate(col = from_to, into = c("from", "to"), sep = "_",remove = FALSE) |>
     dplyr::select(-from_to)
   network_case@bootnet_result_filter@bootnet_edge<-edgeboth |>
     dplyr::left_join(caseedge,by=c("from_to"="from_to")) |>
+    #dplyr::select(-from,-to) |>
+    #tidyr::separate(col = from_to, into = c("from", "to"), sep = "_",remove = FALSE) |>
     dplyr::select(-from_to)
+ 
+  ##################################
   Conditional_network_result <- new("Conditional_network",
                                     group_name=comparison,
+                                   # Conditional_network_layout=Conditional_network_layout,
                                     network_case=network_case,
                                     network_control=network_control
   )
@@ -112,31 +176,46 @@ run_conditional_network<-function(count_table=NULL,samplelist=NULL,compare_group
   
 }
 
-
-#' Split count data into case and control subsets based on sample grouping.
+#' Prepare data for conditional network analysis
 #'
-#' This helper function validates the input data, extracts samples belonging to each group
-#' specified in \code{compare_group} (format: "Group1:Group2"), and returns separate count tables
-#' for case and control. It supports filtering by a predefined \code{node_list}.
+#' Internal function that splits the abundance table into case and control subsets
+#' based on sample grouping and optional feature filtering.
 #'
-#' @param count_table A data frame with a \code{feature_ID} column and sample columns.
-#' @param samplelist A data frame with \code{group} and \code{sample} columns defining sample-group mapping.
-#' @param compare_group A string of the form "Case:Control" indicating the two groups to extract.
-#' @param node_list Optional character vector of feature IDs to subset the data.
+#' @param count_table data.frame, containing a 'feature_ID' column and abundance
+#'                    values for each sample as additional columns.
+#' @param samplelist data.frame, sample metadata containing 'sample' and 'group'
+#'                   columns for group assignment.
+#' @param compare_group character, comparison specification in format
+#'                      "Experimental_group:Control_group". Groups can be combined
+#'                      using "+".
+#' @param node_list character vector, optional. Subset of features to include.
+#'                  If NULL or empty, all features are retained.
 #'
-#' @return A list with two elements: \code{count_table_case} and \code{count_table_control},
-#'         each a data frame with \code{feature_ID} and group-specific sample columns.
+#' @return A list containing two data.frames:
+#'   \item{count_table_case}{data.frame, abundance table for experimental group}
+#'   \item{count_table_control}{data.frame, abundance table for control group}
 #'
-#' @importFrom dplyr distinct filter select all_of sym
+#' @details
+#' Processing steps:
+#' 1. Validate count_table contains 'feature_ID' column.
+#' 2. Remove duplicate feature IDs and drop rows with NA values.
+#' 3. Parse compare_group to identify experimental and control groups.
+#' 4. Extract sample lists for each group from samplelist.
+#' 5. If node_list is provided, filter features to specified subset.
+#' 6. Create separate abundance tables for case and control groups containing
+#'    only samples from their respective groups.
+#'
+#' @importFrom dplyr distinct filter select
 #' @importFrom tidyr drop_na
 #' @importFrom tibble as_tibble_col
-#' @importFrom stringr str_split
 #' @importFrom purrr map_int
-#' @import dplyr
+#' @importFrom stringr str_split
 #'
 #' @keywords internal
-
+#'
+#' @noRd
 run_conditional_data<-function(count_table=NULL,samplelist=NULL,compare_group=NULL,node_list=NULL){
+  ###count_table
   count_table<-as.data.frame(count_table)
   if("feature_ID" %in% colnames(count_table)){
     core_table <- count_table |>
@@ -149,7 +228,7 @@ run_conditional_data<-function(count_table=NULL,samplelist=NULL,compare_group=NU
   #compare_group:Experimental group:control group
   cgroup <-unlist(strsplit(x = compare_group, split = ":"))
   
-  # samplelist
+  ##samplelist
   if(all(c("group","sample") %in% colnames(samplelist))){
     compare_table <- tibble::as_tibble_col(cgroup) |>
       dplyr::group_by(.data$value) |> 

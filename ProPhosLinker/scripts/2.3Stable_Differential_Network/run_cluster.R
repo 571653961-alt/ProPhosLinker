@@ -1,54 +1,90 @@
-#' SubNetwork Class
+#' SubNetwork S4 Class
 #'
-#' An S4 class to encapsulate the results of subnetwork clustering analysis.
-#' It stores metadata about the comparison group, modularity of the clustered network,
-#' color mappings for visualization, the full clustered network structure, and a list
-#' of extracted subnetworks (each containing nodes, edges, and optional layout information).
+#' An S4 class that stores subnetwork clustering results from network analysis.
+#' Contains modularity information, cluster color mapping, and individual
+#' subnetwork structures for visualization and downstream analysis.
 #'
-#' @slot group_name Character string indicating the group comparison label (e.g., "T-vs-N").
-#' @slot modularity Numeric value representing the modularity score of the clustering result,
-#'        which quantifies the strength of community structure in the network.
-#' @slot colormapping A named vector or list mapping subnetwork identifiers to colors,
-#'        used for consistent coloring in downstream visualizations.
-#' @slot overall_cluster_network A list containing two data frames: \code{nodes} and \code{edges},
-#'        representing the full network after cluster assignment.
-#' @slot subnetworks A list where each element corresponds to a significant subnetwork,
-#'        typically including \code{nodes}, \code{edges}, and optionally \code{plot_layout}.
+#' @slot group_name character, group label identifying the network source
+#' @slot modularity numeric, modularity score of the network clustering
+#' @slot colormapping ANY, named color vector mapping cluster IDs to colors
+#' @slot overall_culster_network ANY, list containing nodes and edges for the
+#'                               full clustered network
+#' @slot subnetworks ANY, list of individual subnetworks with their nodes,
+#'                    edges, and optional layout information
 #'
 #' @name SubNetwork-class
 #' @rdname SubNetwork-class
-#' @keywords internal
-
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Create a SubNetwork object
+#' subnet_obj <- new("SubNetwork",
+#'   group_name = "Treatment",
+#'   modularity = 0.35,
+#'   colormapping = c("subnet_1" = "#FF6B6B", "subnet_2" = "#4ECDC4"),
+#'   overall_culster_network = list(nodes = node_df, edges = edge_df),
+#'   subnetworks = subnet_list
+#' )
+#' 
+#' # Access components
+#' subnet_obj@modularity
+#' subnet_obj@colormapping
+#' }
 setClass("SubNetwork",
          slots = c(
            group_name= "character",
            modularity="numeric",
            colormapping = "ANY",
-           overall_cluster_network = "ANY",
+          # Conditional_network_layout="ANY",
+           overall_culster_network = "ANY",
            subnetworks = "ANY"
          )
 )
 
-#' Cluster and Analyze Subnetworks from Nodes and Edges Data.
+#' Perform subnetwork clustering on a correlation network
 #'
-#' This function clusters the input network data using either fast greedy or Louvain method,
-#' based on the cluster size threshold. It further refines subnetworks, ensuring each contains
-#' at least 5 nodes, and returns a detailed SubNetwork object encapsulating clustering results.
+#' This function applies community detection algorithms to identify subnetworks
+#' (clusters) within a correlation network. It iteratively adjusts resolution
+#' to ensure no cluster exceeds the specified maximum size.
 #'
-#' @param nodes A data frame representing nodes in the network.
-#' @param edges A data frame representing edges in the network.
-#' @param cfg_t1 The clustering result of the network.
-#' @param group_name Character string indicating the name of the group for which the analysis is performed.
-#' @param diffmessage Optional parameter indicating differential message type ("NULL", "diff", or "multi").
+#' @param nodes data.frame, node information containing at least a 'node' column
+#'              with node identifiers.
+#' @param edges data.frame, edge information containing 'from' and 'to' columns
+#'              for network edges.
+#' @param clustersize integer, maximum allowed size for any single cluster.
+#'                    Default 25.
 #'
-#' @return An S4 object of class "SubNetwork" containing group name, modularity score, color mapping,
-#' overall cluster network details, and subnetworks information.
+#' @return A community object from igraph containing clustering results with
+#'         membership assignments for each node.
 #'
-#' @import igraph dplyr RColorBrewer bootnet qgraph
+#' @details
+#' Clustering algorithm:
+#' 1. Convert nodes and edges to igraph object using run_igraph.
+#' 2. Attempt fast greedy clustering initially.
+#' 3. If any cluster exceeds clustersize, switch to Louvain algorithm.
+#' 4. Incrementally increase resolution parameter until all clusters are
+#'    ≤ clustersize.
+#' 5. Return final community structure.
+#'
+#' @importFrom igraph cluster_fast_greedy as.undirected membership cluster_louvain
+#'
+#' @examples
+#' \dontrun{
+#' # Cluster network with maximum cluster size of 20
+#' clusters <- run_subnet_cluster(
+#'   nodes = node_data,
+#'   edges = edge_data,
+#'   clustersize = 20
+#' )
+#' 
+#' # View cluster membership
+#' table(igraph::membership(clusters))
+#' }
+#'
 #' @export
-
-run_subnet_cluster<-function(nodes=NULL,edges=NULL,clustersize=30){
-  cor_igraph<-run_igraph(nodes,edges)
+run_subnet_cluster<-function(nodes=NULL,edges=NULL,clustersize=25){
+  cor_igraph<-run_igraph(nodes,edges)#network_show.R
   cfg_t1 <- igraph::cluster_fast_greedy(igraph::as.undirected(cor_igraph))
   if(max(sort(table(igraph::membership(cfg_t1)), decreasing = TRUE)) > clustersize) {
     resolution <- 0.1
@@ -61,25 +97,90 @@ run_subnet_cluster<-function(nodes=NULL,edges=NULL,clustersize=30){
       resolution <- resolution + 0.1
     }
   }
+  
   return(cfg_t1)
 }
 
 
-
-
+#' Add cluster information to network and extract subnetworks
+#'
+#' This function processes clustering results to create a structured SubNetwork
+#' object. It filters out small or empty subnetworks, assigns colors to clusters,
+#' and generates individual subnetwork objects with their associated data.
+#'
+#' @param cfg_t1 igraph community object, clustering results from run_subnet_cluster
+#' @param nodes data.frame, node information containing at least a 'node' column
+#' @param edges data.frame, edge information with 'from', 'to', and correlation columns
+#' @param group_name character, group label(s) for identification. Multiple groups
+#'                   are joined with "-vs-".
+#' @param diffmessage character, type of differential analysis context:
+#'                    "diff" for differential networks, "multi" for multiplex networks,
+#'                    or "NULL" for standard networks.
+#'
+#' @return A SubNetwork S4 object containing:
+#'   \item{group_name}{Processed group label}
+#'   \item{modularity}{Network modularity score}
+#'   \item{colormapping}{Named color vector for cluster visualization}
+#'   \item{overall_culster_network}{List with nodes and edges for full clustered network}
+#'   \item{subnetworks}{List of individual subnetwork objects, each containing:
+#'                      nodes, edges, and optionally plot_layout for differential networks}
+#'
+#' @details
+#' Processing workflow:
+#' 1. Calculate modularity from clustering results.
+#' 2. Build igraph network and assign membership to nodes.
+#' 3. Extract individual subgraphs for each cluster.
+#' 4. Filter out clusters with insufficient edges (< 1) or nodes (≤ 4).
+#' 5. Map original cluster IDs to sequential numbering (subnet_1, subnet_2, etc.).
+#' 6. Generate color palette for clusters using RColorBrewer.
+#' 7. Create overall clustered network with membership annotations.
+#' 8. For each subnetwork, extract node and edge data, optionally including
+#'    layout information for differential/multiplex comparisons.
+#' 9. Return structured SubNetwork object.
+#'
+#' @importFrom dplyr mutate left_join coalesce filter
+#' @importFrom igraph V E modularity membership as.undirected subgraph
+#' @importFrom qgraph averageLayout
+#' @importFrom RColorBrewer brewer.pal brewer.pal.info
+#' @importFrom grDevices colorRampPalette
+#'
+#' @examples
+#' \dontrun{
+#' # Add cluster information to a standard network
+#' subnet_obj <- run_add_cluster(
+#'   cfg_t1 = cluster_results,
+#'   nodes = node_data,
+#'   edges = edge_data,
+#'   group_name = "Treatment",
+#'   diffmessage = "NULL"
+#' )
+#' 
+#' # Access individual subnetworks
+#' first_subnet <- subnet_obj@subnetworks[[1]]
+#' first_subnet$nodes
+#' first_subnet$edges
+#' }
+#'
+#' @export
 run_add_cluster<-function(cfg_t1=NULL,nodes=NULL,edges=NULL,group_name=NULL,
-                          diffmessage="NULL"){
+                          diffmessage="NULL"
+                       
+){
+ 
   if(length(group_name)>1){
     precor_group_name<-paste(group_name, collapse = "-vs-")
   }else{
-    precor_group_name<-gsub(":","-vs-", group_name)
+    precor_group_name<-gsub(":","-vs-", group_name)#diff
   }
-  modularity <- igraph::modularity(cfg_t1)
+ 
+  modularity <- igraph::modularity(cfg_t1) 
+  ########################membership
   cor_igraph<-run_igraph(nodes,edges)
-  t_modules_1 <- sort(table(igraph::membership(cfg_t1)),decr=T)
+  t_modules_1 <- sort(table(igraph::membership(cfg_t1)),decr=T)#table(igraph::membership(cfg_t1))#
   t_modules<-table(igraph::membership(cfg_t1))
+ 
   membership_df <- data.frame(
-    old_membership =as.character(igraph::membership(cfg_t1)),
+    old_membership =as.character(igraph::membership(cfg_t1)),#membership_arrange,
     node = names(igraph::membership(cfg_t1))
   )
   node_names <- names(igraph::V(cor_igraph))
@@ -88,9 +189,11 @@ run_add_cluster<-function(cfg_t1=NULL,nodes=NULL,edges=NULL,group_name=NULL,
 
   igraph::V(cor_igraph)$membership <- old_membership_values
   
+
   subgraphs1 <- lapply(names(t_modules_1), function(i) {
     modelcut(igraph::subgraph(cor_igraph, cfg_t1$membership == i))
   })
+
   sum_cor <- lapply(seq(1,length(subgraphs1)), function(i) {
     if(diffmessage %in% c("diff","multi")){
       cor_case <- igraph::E(subgraphs1[[i]])$cor_case
@@ -116,6 +219,9 @@ run_add_cluster<-function(cfg_t1=NULL,nodes=NULL,edges=NULL,group_name=NULL,
   cor_igraph_top<-cor_igraph
   membership_df<-membership_df |>
     dplyr::mutate(membership_top=ifelse(old_membership %in% names(t_modules_top),old_membership,"other"))
+  # membership_values_top <- membership_df$membership_top[match(node_names, membership_df$node)]
+  # V(cor_igraph_top)$membership <- membership_values_top
+  ######################################overall_culster_network
   bootnet_cluster_edges<-edges
   bootnet_cluster_nodes<-nodes
   membership_mapping<-data.frame(membership_top=as.character(names(t_modules_top)),membership_top_new =as.character(c(1:length(non_zero_positions))))
@@ -125,13 +231,14 @@ run_add_cluster<-function(cfg_t1=NULL,nodes=NULL,edges=NULL,group_name=NULL,
   
   membership_values_top <- membership_df$membership_top_new[match(bootnet_cluster_nodes$node, membership_df$node)]
   bootnet_cluster_nodes$membership<-paste0("subnet_",membership_values_top)
-
+  #######################################subnetworks
   names(subgraphs1)<-paste0("subnet_",membership_mapping$membership_top_new)
   subnet_bootnet_list <- lapply(subgraphs1, function(subgraphs) {
     sub_edge<-igrah_to_edgedata(cor_ppi_igraph_f=subgraphs,diffmessage=diffmessage)
     sub_node<-data.frame(node = union(sub_edge$from,sub_edge$to)) |>
       dplyr::left_join(bootnet_cluster_nodes,by=c("node"="node"))
     x<-sub_node$node
+  
     if(diffmessage %in% c("diff","multi")){
       case_edges<-sub_edge |>
         dplyr::mutate(cor=cor_case)
@@ -144,44 +251,78 @@ run_add_cluster<-function(cfg_t1=NULL,nodes=NULL,edges=NULL,group_name=NULL,
     }else{
       list(nodes = sub_node,edges = sub_edge)
     }
+    
   })
-
+  ########################color_mapping_cluster
   unique_classes<-as.factor(paste0("subnet_",unique(membership_values_top)))
   unique_classes <- unique_classes[!(unique_classes %in% "subnet_other")]
   qual_col_pals <- RColorBrewer::brewer.pal.info[RColorBrewer::brewer.pal.info$category == 'qual',]
   cluster_Palette <- unique(unlist(mapply(RColorBrewer::brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals))))
   if(length(unique_classes)>length(cluster_Palette)){
-    cluster_Palette <-grDevices::colorRampPalette(cluster_Palette)(length(unique_classes))
+    cluster_Palette <-grDevices::colorRampPalette(cluster_Palette)(length(unique_classes))#避免颜色不够
   }
-  color_mapping_cluster <- setNames(c(cluster_Palette[1:length(unique_classes)],"grey"), c(as.character(unique_classes),"subnet_other"))
+  color_mapping_cluster <- setNames(cluster_Palette[1:length(unique_classes)], as.character(unique_classes))
+  bootnet_cluster_nodes<-bootnet_cluster_nodes |>
+     dplyr::filter(membership != "subnet_other")
+  bootnet_cluster_edges<-bootnet_cluster_edges |>
+      dplyr::filter(from %in% bootnet_cluster_nodes$node) |>
+      dplyr::filter(to %in% bootnet_cluster_nodes$node)
+
+  ##################################
   SubNetwork<-new("SubNetwork",
                   group_name=precor_group_name,
                   modularity=modularity,
                   colormapping = color_mapping_cluster,
-                  overall_cluster_network = list(
+                  #Conditional_network_layout=Conditional_network_layout,
+                  overall_culster_network = list(
                     nodes=bootnet_cluster_nodes,
                     edges=bootnet_cluster_edges
                   ),
                   subnetworks = subnet_bootnet_list
+                  
   )
   return(SubNetwork)
  }
   
 } 
 
-#' Convert an igraph Object to Edge Data Frame.
+#' Convert igraph object to edge data frame
 #'
-#' Converts an igraph object to a data frame of edges with optional additional columns depending on the diffmessage parameter.
-#' This function extracts edge attributes such as correlation values, p-values, etc., into a structured format.
+#' Internal function that extracts edge attributes from an igraph object and
+#' converts them to a structured data frame. Handles different network types
+#' including standard, differential, and multiplex networks.
 #'
-#' @param cor_ppi_igraph_f An igraph object representing the network.
-#' @param diffmessage Optional parameter indicating differential message type ("NULL", "diff", or "multi").
+#' @param cor_ppi_igraph_f igraph object, network to convert
+#' @param diffmessage character, type of network:
+#'                    "diff" for differential networks,
+#'                    "multi" for multiplex networks,
+#'                    "NULL" for standard networks.
 #'
-#' @return A data frame containing edge information with columns like 'from', 'to', 'cor', etc.
+#' @return A data.frame of edges with columns appropriate to network type:
+#'   \item{Standard}{from, to, cor, p_adjust, CIrange}
+#'   \item{Differential}{from, to, cor, cor_case, cor_control, from_to, cor_FC,
+#'                       cor_p_value, cor_status, CIrange_case, CIrange_control,
+#'                       p_adjust_case, p_adjust_control}
+#'   \item{Multiplex}{Same as differential plus multiplex_status}
 #'
-#' @import igraph
-#' @export
-
+#' @details
+#' Extracted attributes include:
+#' \itemize{
+#'   \item from, to: Edge endpoints
+#'   \item cor: Correlation coefficient(s)
+#'   \item p_adjust: Adjusted p-values
+#'   \item CIrange: Confidence interval range
+#'   \item For differential/multiplex: Case/control specific values
+#'   \item from_to: Combined node identifier
+#'   \item cor_FC: Fold change of correlations
+#'   \item cor_status: Edge status (present/absent/divergent)
+#' }
+#'
+#' @keywords internal
+#'
+#' @importFrom igraph as_edgelist E
+#'
+#' @noRd
 igrah_to_edgedata<-function(cor_ppi_igraph_f,diffmessage="NULL"){
   edges <- igraph::as_edgelist(cor_ppi_igraph_f, names = TRUE)
   if(diffmessage=="diff"){
@@ -200,7 +341,7 @@ igrah_to_edgedata<-function(cor_ppi_igraph_f,diffmessage="NULL"){
       p_adjust_case = igraph::E(cor_ppi_igraph_f)$p_adjust_case,
       p_adjust_control = igraph::E(cor_ppi_igraph_f)$p_adjust_control
     )
-  }else if(diffmessage=="multi"){
+  }else if(diffmessage=="multi"){   ##################################
     edge_data <- data.frame(
       from = edges[, 1],
       to = edges[, 2],
@@ -222,25 +363,43 @@ igrah_to_edgedata<-function(cor_ppi_igraph_f,diffmessage="NULL"){
       from = edges[, 1],
       to = edges[, 2],
       cor = igraph::E(cor_ppi_igraph_f)$cor,
-      p_adjust= igraph::E(cor_ppi_igraph_f)$p_adjust
+      p_adjust= igraph::E(cor_ppi_igraph_f)$p_adjust,      
+      CIrange=igraph::E(cor_ppi_igraph_f)$CIrange
     ) 
   }
  
   return(edge_data)
 }
 
-#' Filter Network Components Based on Size.
+#' Filter network to retain only connected components above size threshold
 #'
-#' Filters out components of a network that are smaller than a specified size (default is 5).
-#' Removes isolated vertices and returns the largest connected component(s) of the network.
+#' Internal function that removes isolated nodes and filters network components
+#' to only those with at least 5 nodes. Ensures subnetworks have sufficient
+#' connectivity for meaningful analysis.
 #'
-#' @param net An igraph object representing the network.
+#' @param net igraph object, network to filter
 #'
-#' @return An igraph object representing the filtered network.
+#' @return An igraph object containing only:
+#'   \itemize{
+#'     \item Nodes with degree > 0 (non-isolated)
+#'     \item Connected components with size ≥ 5
+#'   }
 #'
-#' @import igraph
-#' @export
-
+#' @details
+#' Processing steps:
+#' 1. Identify connected components in the network.
+#' 2. Remove nodes with degree 0.
+#' 3. Filter to keep only components with ≥ 5 nodes.
+#' 4. Return induced subgraph of retained nodes.
+#'
+#' If no component meets the size threshold, the original network is returned
+#' (though likely small or empty).
+#'
+#' @keywords internal
+#'
+#' @importFrom igraph components degree delete_vertices induced_subgraph
+#'
+#' @noRd
 modelcut<-function(net){
   comp <- igraph::components(net)
   if(max(comp$csize)>5){
