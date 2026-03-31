@@ -180,7 +180,9 @@ def main(pro_file, phos_file, sample_group, mapping_file,
             sample_group=BasicConfig.outdir / Path(ResultDirConfig.data_preprocessing) / Path('sample_list.tsv'),
             prodiff=BasicConfig.outdir / Path(ResultDirConfig.omics_differential_analysis) / Path(BasicConfig.group_comparing.replace(':', '_vs_') + '_' + BasicConfig.omics1_name + '.tsv'),
             phosdiff=BasicConfig.outdir / Path(ResultDirConfig.omics_differential_analysis) / Path(BasicConfig.group_comparing.replace(':', '_vs_') + '_' + BasicConfig.omics2_name + '.tsv'),
-            network_log2FC=BasicConfig.network_log2FC
+            network_log2FC=BasicConfig.network_log2FC,
+            username=Neo4jConfig.username,
+            password=Neo4jConfig.password
         )
     else:
         data_config = DataPreprocessingConfig(
