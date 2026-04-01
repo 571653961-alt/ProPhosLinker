@@ -1,4 +1,3 @@
-```markdown
 # ProPhosLinker
 
 ProPhosLinker is an integrative analysis toolkit designed to provide an in-depth understanding of proteomics and phosphoproteomics data. It facilitates the exploration of complex biological processes by offering a reproducible pipeline for:
