@@ -3,115 +3,115 @@
 ProPhosLinker is an integrative analysis toolkit designed to provide an in-depth understanding of proteomics and phosphoproteomics data. It facilitates the exploration of complex biological processes by offering a reproducible pipeline for:
 
 - **Differential expression analysis** of proteins and phosphosites to uncover key molecular differences
-- **Phosphorylation rate inference** (site-level vs protein-level) through advanced quantile modelling, emphasizing the nuanced relationship between protein abundance and phosphorylation dynamics
-- **Knowledge graph-based functional network construction** (Neo4j-enabled), leveraging heterogeneous data sources such as PhosphoSitePlus, TRRUST, CellChatDB, and CKG for robust protein-site functional mapping
-- **Subtype concordance and clustering** using advanced methods (Mfuzz, WGCNA, NMF), to identify molecular subtypes and their phosphorylation profiles
-
+- **Phosphorylation rate inference** (site-level vs protein-level) through advanced quantile modelling
+- **Knowledge graph-based functional network construction** (Neo4j-enabled), leveraging heterogeneous data sources (e.g., PhosphoSitePlus, TRRUST)
+- **Subtype concordance and clustering** using advanced methods (Mfuzz, WGCNA, NMF)
 
 ---
 
 ## 🚀 Key Features
 
-- **Comprehensive analysis**: Perform differential expression analysis, functional enrichment, and network analysis, all in a unified pipeline
-- **Innovative modelling**: Quantile modelling to assess phosphorylation rate variations at the site and protein level, incorporating biological context for precision
-- **Advanced functional network analysis**: Integrate heterogeneous biological knowledge for constructing and analyzing dynamic functional networks using Neo4j
-- **Flexible and reproducible**: Easily run specific pipeline steps, adjust parameters via CLI or YAML configuration, and ensure reproducibility with version-controlled workflows
-
+- **Comprehensive Analysis**: Perform differential expression analysis, functional enrichment, and network analysis, all in a unified pipeline.
+- **Innovative Modelling**: Quantile modelling to assess phosphorylation rate variations incorporating biological context.
+- **Knowledge Graph Integration**: Construct and analyze dynamic functional networks using Neo4j.
+- **Flexible & Reproducible**: Easily run specific pipeline steps or adjust parameters via CLI and YAML configuration.
 
 ---
 
 ## 📦 Installation
 
-To use **ProPhosLinker**, you need to install dependencies in the following order: **Neo4j**, **R packages**, and **Python dependencies**.
+To use **ProPhosLinker**, you can choose the highly recommended Docker method (which avoids dependency issues) or install everything manually.
 
-### 1) Install Neo4j (required for functional network analysis)
+### 🐳 Method 1: Docker (Highly Recommended)
 
-**ProPhosLinker** relies on **Neo4j 5.x+** for functional network analysis. Ensure Neo4j is installed and accessible via `neo4j` or `cypher-shell`.
+Using Docker is the easiest way to run ProPhosLinker as it bundles Python, R, all required packages, and Neo4j into a single environment.
 
-#### Download Neo4j:
-
-- Download Neo4j from the [official website](https://neo4j.com/download/). Choose **Neo4j 5.x+** for compatibility with ProPhosLinker.
-
-#### Import the Knowledge Graph:
-
-1. After installing Neo4j, place the `ProPhosLinker_KG.dump` file in a directory accessible by Neo4j.
-2. Run the following command to import the knowledge graph into Neo4j:
-
+#### 1. Build the Docker Image
+Navigate to the root directory of the project and run:
 ```bash
-neo4j-admin database load neo4j --from-path=./ProPhosLinker/database --overwrite-destination=true 
-````
+docker build -t prophoslinker:v1 .
+```
 
-Make sure to replace `path/to/ProPhosLinker_KG.dump` with the actual path of the dump file.
+#### 2. Run the Container
+To run the container and access the results on your local machine, use volume mounting (`-v`):
+```bash
+docker run -it --rm \
+  -p 7474:7474 -p 7687:7687 \
+  -v /path/to/your/local/results:/app/results \
+  --name prophoslinker_test \
+  prophoslinker:v1
+```
+> 💡 **Note**: This command forwards Neo4j ports so you can view the knowledge graph at `http://localhost:7474` in your browser.
 
 ---
 
-### 2) Install R and required R packages
+### 🛠️ Method 2: Manual Installation
 
-ProPhosLinker relies on several R scripts for certain analysis steps. Please ensure **R (>= 4.0)** is installed, and then install the necessary R packages.
+If you prefer to set up the environment on your native machine, follow these steps in order:
 
-Run the following command in your R console to install the required packages:
+#### 1. Install Neo4j (>= 5.x)
+ProPhosLinker relies on Neo4j for functional network analysis. 
+1. Download Neo4j from the [official website](https://neo4j.com/download/).
+2. Place the `ProPhosLinker_KG.dump` file in a directory accessible by Neo4j.
+3. Run the following command to import the knowledge graph:
+```bash
+neo4j-admin database load neo4j --from-path=./ProPhosLinker/database --overwrite-destination=true
+```
+
+#### 2. Install R & Required Packages (R >= 4.0)
+Open your R console and run the following script to install CRAN and Bioconductor packages with optimized mirrors:
 
 ```r
-install.packages(c(
-   "optparse", "readr", "stringr", "dplyr", "vegan", "ggrepel", "ggplot2",
-  "tidyverse", "doParallel", "patchwork", "pheatmap", "plyr",
-  "viridis", "grid", "flashClust", "ggsankeyfier", "statmod", "colorspace",
-  "reshape2", "tibble", "igraph", "ggraph", "tidygraph", "tidyr",
-  "ggforce", "ggpubr", "Hmisc","bootnet", "graphlayouts", "scatterpie",
-  "ggsci", "ggnewscale", "svglite", "ggiraph"
+# --- 1. Base Tools & Environment ---
+options(repos = c(CRAN = "https://mirrors.tuna.tsinghua.edu.cn/CRAN/"))
+options(BioC_mirror = "https://mirrors.tuna.tsinghua.edu.cn/bioconductor")
+if (!require("BiocManager", quietly = TRUE)) install.packages("BiocManager")
 
-if (!require('BiocManager', quietly = TRUE)) {
-    install.packages('BiocManager', repos='https://mirrors.tuna.tsinghua.edu.cn/CRAN/')
+# --- 2. Bioconductor Packages ---
+bioc_packages <- c(
+  "AnnotationDbi", "GO.db", "preprocessCore", "impute", 
+  "limma", "Mfuzz", "GOSemSim", "DOSE", "qvalue",
+  "ggtree", "enrichplot", "clusterProfiler", "org.Hs.eg.db"
+)
+BiocManager::install(bioc_packages, ask = FALSE, update = FALSE)
+
+# --- 3. CRAN Packages ---
+cran_packages <- c(
+  "optparse", "readr", "stringr", "dplyr", "vegan", "ggrepel", "ggplot2", 
+  "NMF", "tidyverse", "doParallel", "WGCNA", "patchwork", "pheatmap", 
+  "plyr", "viridis", "flashClust", "colorspace", "reshape2", "tibble", 
+  "igraph", "ggraph", "tidygraph", "tidyr", "ggforce", "ggpubr", 
+  "Hmisc", "bootnet", "graphlayouts", "scatterpie", "ggsci", 
+  "ggnewscale", "svglite", "ggiraph", "remotes", "ggsankeyfier",
+  "units", "gdtools", "systemfonts"
+)
+
+for (pkg in cran_packages) {
+  if (!require(pkg, character.only = TRUE, quietly = TRUE)) {
+    install.packages(pkg, dependencies = c("Depends", "Imports", "LinkingTo"), upgrade = "never")
   }
-
-BiocManager::install(
-    c('NMF', "WGCNA", 'limma', 'Mfuzz', 'clusterProfiler', 'org.Hs.eg.db', 'enrichplot', 'ggtree'),
-    ask = FALSE,
-    update = FALSE,
-    force = TRUE
-  )
-))
+}
 ```
 
-Once the packages are installed, proceed to the next step.
-
----
-
-### 3) Install Python dependencies
-
-Now that the R environment is set up, you can install the required Python packages for ProPhosLinker.
-
-1. Install the Python dependencies via the following command:
-
+#### 3. Install Python Dependencies
+Finally, install the Python side of the toolkit:
 ```bash
 pip install -r requirements.txt
-```
-
-2. **Editable installation** (recommended for development):
-
-```bash
 pip install -e .
 ```
-
-This will allow you to modify the code locally and have those changes immediately reflected in your environment.
-
----
-
-By following these steps, you will have everything set up to run **ProPhosLinker** and use it for analysis.
 
 ---
 
 ## 🛠️ Quick Start (CLI)
 
-### Basic example (full pipeline)
-
+### Full pipeline execution
 ```bash
 ProPhosLinker \
   --pro_file "casedata/protein_abundance.tsv" \
   --phos_file "casedata/phosphoprotein_abundance.tsv" \
   --sample_group "casedata/compare_groups.tsv" \
   --mapping_file "casedata/protein_phosphoproSite.tsv" \
-  --metadata_file "casedata/clinical_table_140.tsv"
+  --metadata_file "casedata/clinical_table_140.tsv" \
   --config "ProPhosLinker/config.yaml" \
   --group_comparing "T:N" \
   --outdir "." \
@@ -121,159 +121,29 @@ ProPhosLinker \
   --password "neo4j_password"
 ```
 
-### Run only a specific step
-
+### Run only specific steps
 ```bash
 ProPhosLinker \
   --pro_file protein_abundance.tsv \
   --phos_file protein_phosphoproSite.tsv \
   --sample_group compare_groups.tsv \
   --mapping_file mapping.tsv \
-  --config "ProPhosLinker/config.yaml" \
   --group_comparing "Case:Control" \
-  --outdir "." \
-  --pro_FC 1.5 \
-  --phos_FC 1.5 \
-  --network_FC 1.5 \
-  --steps functional_analysis
-```
-
-### Run multiple steps
-
-```bash
-ProPhosLinker \
-  --pro_file protein_abundance.tsv \
-  --phos_file protein_phosphoproSite.tsv \
-  --sample_group compare_groups.tsv \
-  --mapping_file mapping.tsv \
-  --config "ProPhosLinker/config.yaml" \
-  --group_comparing "Case:Control" \
-  --outdir "." \
-  --pro_FC 1.8 \
-  --phos_FC 1.8 \
-  --network_FC 1.8 \
-  --steps "data_preprocessing,differential_analysis,functional_analysis"
+  --steps "data_preprocessing,differential_analysis"
 ```
 
 ---
 
 ## 📌 Supported Pipeline Steps (`--steps`)
-| Step name               | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `data_preprocessing`    | **Data preprocessing** ensures robust statistical inference through quality control, performs median centering normalization, and completes missing value imputation. Prepares the data for downstream analysis..                                                                                                                                                                                                        |
-| `pattern_analysis`      | **Multiscale integration** through quantification of global similarity between omics datasets (Procrustes analysis) and weighted gene co-expression network analysis (WGCNA), identifying key molecular modules supporting cross-omics associations. Visualize the consistency or disconnection between proteomics and phosphoproteomics subtypes (NMF-based subtyping).                                                                                                                                                                             |
-| `differential_analysis` | **Statistical association analysis** designed to uncover complex differential regulation features. This module not only covers standard differential expression but also introduces differential correlation network (DCN) inference to identify correlation shifts among differentially expressed molecules. Additionally, **abundance-dependent phosphorylation dynamics modeling** (DPR) is used to precisely analyze the nonlinear modification patterns constrained by protein expression levels. |
-| `functional_analysis`   | **Functional and knowledge-driven integration**, mapping multidimensional statistical signals to heterogeneous biological networks integrated with prior knowledge. This step uses Neo4j for knowledge graph-based functional network construction.                                                                                                                                                                                                                                                    |
 
+| Step name | Description |
+| :--- | :--- |
+| `data_preprocessing` | Quality control, median centering normalization, and missing value imputation. |
+| `pattern_analysis` | Multiscale integration via Procrustes analysis, WGCNA, and NMF-based subtyping. |
+| `differential_analysis`| Abundance-dependent phosphorylation dynamics (DPR) and differential correlation networks (DCN). |
+| `functional_analysis` | Mapping signals to Neo4j knowledge graphs and running network biology functional integration. |
 
-> Note: The pipeline always runs in the internal logical order regardless of the order you specify in `--steps`.
-
----
-
-## 🧩 Project Structure
-
-```text
-E:/项目/ProPhosLinker/
-├── LICENSE
-├── MANIFEST.in
-├── pyproject.toml
-├── README.md
-├── requirements.txt
-├── setup.py
-│
-├── casedata/                     # example input files
-│   ├── clinical_table_140.tsv
-│   ├── compare_groups.tsv
-│   ├── compare_groups_old_V.tsv
-│   ├── phosphoprotein_abundance.tsv
-│   ├── phosprotein_diff.tsv
-│   ├── protein_abundance.tsv
-│   ├── protein_diff.tsv
-│   └── protein_phosphoproSite.tsv
-│
-└── ProPhosLinker/                # main Python package
-    ├── cli.py                    # command line interface entry point
-    ├── config.yaml               # default configuration
-    ├── main.py                   # main orchestration module
-    ├── __init__.py
-    │
-    ├── analysis/                 # analysis modules (differential, network, etc.)
-    │   ├── data_preprocessing.py
-    │   ├── differential_analysis.py
-    │   ├── functional_analysis.py
-    │   ├── functionnal_interaction_network.py
-    │   ├── hub_protein_visualization.py
-    │   ├── pattern_analysis.py
-    │   ├── phos_rate_subtyping.py
-    │   ├── pro_phosphopro_network_analysis.py
-    │   ├── pro_phosphopro_network_contructor.py
-    │   ├── pro_phosphopro_network_visualization.py
-    │   └── __init__.py
-    │
-    ├── config/                   # configuration templates / defaults
-    │   ├── analysis_config.py
-    │   ├── basic_config.py
-    │   ├── color_config.py
-    │   ├── neo4j_config.py
-    │   ├── preprocessing_config.py
-    │   ├── result_dir_config.py
-    │   ├── script_config.py
-    │   └── __init__.py
-    │
-    ├── database/                 # Neo4j-related helpers / loaders
-    │   ├── neo4j_manager.py
-    │   ├── __init__.py
-    │   └── dataload/
-    │
-    ├── scripts/                  # R scripts called by pipeline
-    │   ├── 1.1procrustes.R
-    │   ├── 1.2clusterbyNMF.R
-    │   ├── 1.3WGCNA.R
-    │   ├── 1.pattern_analysis.R
-    │   ├── 2.1omics_differential_analysis.R
-    │   ├── 2.2phosRate_quantile_subtyping.R
-    │   ├── 2.3differential_network.R
-    │   ├── 3.1functional_enrichment.R
-    │   ├── 3.2functional_enrichment_function.R
-    │   ├── 3.2functionnal_interaction_network_community_visualisation.R
-    │   ├── 3.2functionnal_interaction_network_visualization.R
-    │   ├── 3.2functionnal_interaction_network_visualization_CN.R
-    │   ├── 3.3network_hubgen_visualization.R
-    │   └── 2.3Stable_Differential_Network/
-    │       ├── .Rhistory
-    │       ├── differential_network.R
-    │       ├── differential_subnetwork_plot.R
-    │       ├── diff_net_community_detection_plot.R
-    │       ├── functional_enrichment_function_delete.R
-    │       ├── network_show.R
-    │       ├── network_show_delete.R
-    │       ├── pipline_save.R
-    │       ├── run_cluster.R
-    │       ├── run_color.R
-    │       ├── run_conditional_network.R
-    │       ├── run_corStability.R
-    │       ├── run_diff.R
-    │       ├── run_diffsubnet_enrichment.R
-    │       ├── run_diff_enrichment.R
-    │       ├── run_diff_network.R
-    │       ├── run_enrichment.R
-    │       ├── run_mediation.R
-    │       ├── run_predata.R
-    │       ├── run_prenetwork.R
-    │       └── run_samplelist.R
-    │
-    └── tools/                    # helper scripts/tools
-        ├── neo4j_import.py
-        └── __init__.py
-```
-
----
-
-## 💡 Tips & Notes
-
-- **If you skip a step** (e.g., `differential_analysis`), be sure the downstream step has required intermediate outputs.
-- **Neo4j must be running** before using `functional_analysis`.
-- Use `--config <path>` to customize parameters (see `ProPhosLinker/config.yaml`).
+> 💡 **Note**: The pipeline always runs in its internal logical order regardless of the order you specify in `--steps`.
 
 ---
 
