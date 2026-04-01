@@ -1,3 +1,4 @@
+```markdown
 # ProPhosLinker
 
 ProPhosLinker is an integrative analysis toolkit designed to provide an in-depth understanding of proteomics and phosphoproteomics data. It facilitates the exploration of complex biological processes by offering a reproducible pipeline for:
@@ -18,7 +19,7 @@ ProPhosLinker is an integrative analysis toolkit designed to provide an in-depth
 
 ---
 
-## 📦 Installation
+## 📦 Installation & Usage
 
 To use **ProPhosLinker**, you can choose the highly recommended Docker method (which avoids dependency issues) or install everything manually.
 
@@ -32,8 +33,8 @@ Navigate to the root directory of the project and run:
 docker build -t prophoslinker:v1 .
 ```
 
-#### 2. Run the Container
-To run the container and access the results on your local machine, use volume mounting (`-v`):
+#### 2. Run and Enter the Container
+To run the container interactively and access the results on your local machine, use volume mounting (`-v`):
 ```bash
 docker run -it --rm \
   -p 7474:7474 -p 7687:7687 \
@@ -42,6 +43,17 @@ docker run -it --rm \
   prophoslinker:v1
 ```
 > 💡 **Note**: This command forwards Neo4j ports so you can view the knowledge graph at `http://localhost:7474` in your browser.
+
+#### 3. Run the Analysis (Inside the Container)
+Once you are inside the running container's terminal, you can execute the full analysis pipeline directly using the provided case data:
+```bash
+ProPhosLinker \
+  --pro_file "casedata/protein_abundance.tsv" \
+  --phos_file "casedata/phosphoprotein_abundance.tsv" \
+  --sample_group "casedata/compare_groups.tsv" \
+  --mapping_file "casedata/protein_phosphoproSite.tsv" \
+  --metadata_file "casedata/clinical_table_140.tsv"
+```
 
 ---
 
@@ -63,8 +75,8 @@ Open your R console and run the following script to install CRAN and Bioconducto
 
 ```r
 # --- 1. Base Tools & Environment ---
-options(repos = c(CRAN = "https://mirrors.tuna.tsinghua.edu.cn/CRAN/"))
-options(BioC_mirror = "https://mirrors.tuna.tsinghua.edu.cn/bioconductor")
+options(repos = c(CRAN = "[https://mirrors.tuna.tsinghua.edu.cn/CRAN/](https://mirrors.tuna.tsinghua.edu.cn/CRAN/)"))
+options(BioC_mirror = "[https://mirrors.tuna.tsinghua.edu.cn/bioconductor](https://mirrors.tuna.tsinghua.edu.cn/bioconductor)")
 if (!require("BiocManager", quietly = TRUE)) install.packages("BiocManager")
 
 # --- 2. Bioconductor Packages ---
@@ -102,9 +114,11 @@ pip install -e .
 
 ---
 
-## 🛠️ Quick Start (CLI)
+## 🛠️ Quick Start (CLI - Manual Mode)
 
-### Full pipeline execution
+If you installed ProPhosLinker manually, you can run it with additional parameter configurations:
+
+### Full pipeline execution example
 ```bash
 ProPhosLinker \
   --pro_file "casedata/protein_abundance.tsv" \
