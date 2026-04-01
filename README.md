@@ -24,27 +24,27 @@ To use **ProPhosLinker**, you can choose the highly recommended Docker method (w
 
 ### 🐳 Method 1: Docker (Highly Recommended)
 
-Using Docker is the easiest way to run ProPhosLinker as it bundles Python, R, all required packages, and Neo4j into a single environment.
+Using Docker is the easiest way to run ProPhosLinker. You don't need to install R, Python, or Neo4j manually. You can simply pull the pre-built image from Docker Hub.
 
-#### 1. Build the Docker Image
-Navigate to the root directory of the project and run:
+#### 1. Pull the Image
+You can download the entire environment with a single command:
 ```bash
-docker build -t prophoslinker:v1 .
+docker pull ppy1222/prophoslinker:v1
 ```
 
 #### 2. Run and Enter the Container
-To run the container interactively and access the results on your local machine, use volume mounting (`-v`):
+Run the container and mount your local directory to save the analysis results:
 ```bash
 docker run -it --rm \
   -p 7474:7474 -p 7687:7687 \
   -v /path/to/your/local/results:/app/results \
   --name prophoslinker_test \
-  prophoslinker:v1
+  ppy1222/prophoslinker:v1
 ```
-> 💡 **Note**: This command forwards Neo4j ports so you can view the knowledge graph at `http://localhost:7474` in your browser.
+> 💡 **Note**: `/path/to/your/local/results` should be the absolute path on your host machine where you want to store the output files.
 
 #### 3. Run the Analysis (Inside the Container)
-Once you are inside the running container's terminal, you can execute the full analysis pipeline directly using the provided case data:
+After entering the container, execute the pipeline with the provided case data:
 ```bash
 ProPhosLinker \
   --pro_file "casedata/protein_abundance.tsv" \
@@ -53,6 +53,7 @@ ProPhosLinker \
   --mapping_file "casedata/protein_phosphoproSite.tsv" \
   --metadata_file "casedata/clinical_table_140.tsv"
 ```
+
 
 ---
 
