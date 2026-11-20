@@ -30,7 +30,7 @@ class Neo4jConfig:
     
     uri: ClassVar[str] = "bolt://localhost:7687"
     username: ClassVar[str] = "neo4j"
-    password: ClassVar[str] = "neo4j"
+    password: ClassVar[str] = "12345678"
     neo4j_path: ClassVar[str] = ""
     
     @classmethod

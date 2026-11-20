@@ -162,6 +162,7 @@ Procrustes_Analysis <- function(pro_path, phos_path, group_path, out_dir, dim_rd
       "Procrustes Analysis\nM\u00B2 = {round(pro$ss, digits = 3)}, r = {round(sqrt(1 - pro$ss), digits = 3)}, p = {round(pro$signif, digits = 3)}"
     )
     
+    
     # Create ggplot visualization
     p <- ggplot(plot_data) +
       
@@ -220,7 +221,7 @@ Procrustes_Analysis <- function(pro_path, phos_path, group_path, out_dir, dim_rd
         label = pro_stat_text,
         hjust = -0.05,                  # Slight inward offset
         vjust = 1.1,                    # Slight downward offset
-        size = 6,                       # Font size
+        size = 16,                       # Font size
         colour = "black",
         fontface = "bold"
       ) +

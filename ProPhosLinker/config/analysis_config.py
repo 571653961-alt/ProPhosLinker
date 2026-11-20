@@ -172,7 +172,7 @@ class PatternAnalysisConfig:
             # Plotting parameters
             # 1.1 PA colors
             'PA_group1_color': cls.PA_group1_color,
-            'PA_phos_color': cls.PA_phos_color,
+            'PA_group2_color': cls.PA_group2_color,
             
             # 1.3 WGCNA colors
             'WGCNA_pro_ME_color': cls.WGCNA_pro_ME_color,
@@ -196,7 +196,7 @@ class PatternAnalysisConfig:
         """Get analysis module groupings."""
         return {
             'pattern_analysis_1_1': [
-                'dim_rd_mtd','PA_group1_color', 'PA_phos_color'
+                'dim_rd_mtd','PA_group1_color', 'PA_group2_color'
             ],
             'nmf_analysis_1_2': [
                 'NMF_pro_filter_num', 'NMF_phos_filter_num'
@@ -299,24 +299,63 @@ class DifferentialConfig:
     pro_log2FC: float = BasicConfig.pro_log2FC
     phos_log2FC: float = BasicConfig.phos_log2FC
     diff_p_val: float = BasicConfig.pro_diff_q_val
+    log_transform: bool = BasicConfig.log_transform
     omics_differential_rscript_path: ClassVar[Union[str, Path]] = ScriptConfig.get_full_path('omics_differential_rscript_path') #ScriptConfig.omics_differential_rscript_path
     
     # 2.1 Plotting parameters
     omics_diff_quadrant_pro_color: str = ColorConfig.omics_diff_quadrant_pro_color
     omics_diff_quadrant_phos_color: str = ColorConfig.omics_diff_quadrant_phos_color
     
-    # 2.2 Phosphorylation rate subtyping parameters
-    phos_rate_FC: float = BasicConfig.phosRate_log2FC
-    quantile_rank: int = 100
-    quantile_rank_step: int = 1
-    frac_param: float = 1
-    cluster_num: int = 9
-    plot_sites_num: int = 7   ## This seems unused
-    plot_site_ids: ClassVar[List] = None   ## This seems unused
-    vs_total_phos_rate_upper: float = 0.6
-    vs_total_phos_rate_lower: float = 0.4
-    top_tail_diff_site_num: int = 5
+    # 2.2 Parent-protein-overlap phosRate subtyping (standalone R script) parameters
+    robust_quantiles: str = "5%,95%"
+    high_overlap_coefficient: float = 0.50
+    high_overlap_iqr_ratio: float = 0.50
+    partial_overlap_coefficient: float = 0.20
+    fdr_threshold: float = 0.05
+    effect_threshold_log2: float = 1.0
+    conditional_spline_df: int = 3
+    prediction_grid_points: int = 180
+    support_tolerance: float = 0.0
+
+    # 2.2 Plotting colors (standalone R script routing + conditional-curve)
+    color_control: str = "#012da7"
+    color_case: str = "#ff7f00"
+    color_unavailable: str = "#969696"
+    color_global: str = "#0072B2"
+    color_conditional: str = "#009E73"
+
+    # 2.2 Conditional-curve figure style (mirrors the R script's --plot-* options)
+    # Every visual constant is exposed here so the figure can be restyled from
+    # config.yaml without touching the R code.
+    plot_width: float = 8.0
+    plot_height: float = 6.0
+    plot_dpi: int = 300
+    plot_base_size: float = 13.0
+    plot_title_size: float = 22.0
+    plot_axis_title_size: float = 15.0
+    plot_axis_text_size: float = 13.0
+    plot_legend_size: float = 14.0
+    plot_caption_size: float = 11.0
+    plot_line_width: float = 2.0
+    plot_point_size: float = 1.8
+    plot_point_alpha: float = 0.55
+    plot_ribbon_alpha: float = 0.15
+    plot_spine_width: float = 1.2
+    plot_tick_width: float = 1.2
+    plot_tick_length: float = 4.0
+    plot_dash_color: str = "grey45"
+    plot_dash_width: float = 1.1
+    plot_panel_low: str = "#F7F9FC"
+    plot_panel_mid: str = "#FFF9EF"
+    plot_panel_high: str = "#F9F5FA"
+    plot_caption_color: str = "grey30"
+    plot_group_labels: str = "N,T"
+    plot_n_representative: int = 5
     
+    # 2.2 Global phosphoprotein differential results (optional; enables
+    # per-global-class representative plots with UP/DOWN/Non-significant prefixes)
+    global_phosprotein_diff: str = ""
+
     # 2.2 Plotting parameters
     raw_pro_point_color: str = ColorConfig.raw_pro_point_color
     fitted_pro_point_color: str = ColorConfig.fitted_pro_point_color
@@ -406,7 +445,6 @@ class DifferentialConfig:
             
             # Output directory
             'outdir': str(cls.outdir),
-            'oudir_default_name': cls.oudir_default_name,
             
             # Script path
             'script_path': cls.script_path,
@@ -430,18 +468,6 @@ class DifferentialConfig:
             # 2.1 Plotting parameters
             'omics_diff_quadrant_pro_color': cls.omics_diff_quadrant_pro_color,
             'omics_diff_quadrant_phos_color': cls.omics_diff_quadrant_phos_color,
-            
-            # 2.2 Phosphorylation rate subtyping parameters
-            'phos_rate_FC': cls.phos_rate_FC,
-            'quantile_rank': cls.quantile_rank,
-            'quantile_rank_step': cls.quantile_rank_step,
-            'frac_param': cls.frac_param,
-            'cluster_num': cls.cluster_num,
-            'plot_sites_num': cls.plot_sites_num,
-            'plot_site_ids': cls.plot_site_ids,
-            'vs_total_phos_rate_upper': cls.vs_total_phos_rate_upper,
-            'vs_total_phos_rate_lower': cls.vs_total_phos_rate_lower,
-            'top_tail_diff_site_num': cls.top_tail_diff_site_num,
             
             # 2.2 Plotting parameters
             'raw_pro_point_color': cls.raw_pro_point_color,
@@ -506,9 +532,7 @@ class DifferentialConfig:
                 'omics_diff_quadrant_pro_color', 'omics_diff_quadrant_phos_color'
             ],
             'phosrate_subtyping_2_2': [
-                'phos_rate_FC', 'quantile_rank', 'quantile_rank_step', 'frac_param',
-                'cluster_num', 'plot_sites_num', 'plot_site_ids',
-                'vs_total_phos_rate_upper', 'vs_total_phos_rate_lower', 'top_tail_diff_site_num',
+                'robust_quantiles', 'high_overlap_coefficient', 'high_overlap_iqr_ratio',
                 'raw_pro_point_color', 'fitted_pro_point_color', 'fitted_pro_line_color',
                 'pro_fc_line_color', 'total_phos_rate_line_color', 'color_lst',
                 'Mfuzz_pluscolor', 'Mfuzz_minuscolor', 'Mfuzz_allcolor',
@@ -656,7 +680,7 @@ class FunctionalConfig:
         if not self.username:
             self.username = Neo4jConfig.username
         if not self.password:
-            self.self.password = Neo4jConfig.password
+            self.password = Neo4jConfig.password
         if not self.kgbased_network_disease:
             self.kgbased_network_disease: str = BasicConfig.disease
 
@@ -675,7 +699,6 @@ class FunctionalConfig:
             
             # Output directory
             'outdir': str(cls.outdir),
-            'oudir_default_name': cls.oudir_default_name,
             
             # Script path
             'script_path': cls.script_path,

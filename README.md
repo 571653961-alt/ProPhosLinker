@@ -108,6 +108,44 @@ pip install -e .
 
 ---
 
+## 🎨 Conditional-response curve figures (step 2.2)
+
+`scripts/2.2phosRate_subtyping.R` draws one representative site per response pattern
+(`conditional_<GENE>_<INDEX>.png`). The layout is fixed — bold title on top left,
+legend below it on the left, three interval background panels, joint-model confidence
+bands, and a bold grey interval-statistics caption at the bottom left — while every
+visual constant is exposed as a parameter.
+
+Two equivalent entry points:
+
+1. **`config.yaml`** → `phosrate_subtyping` → `plot` (used by `main.py` / the CLI pipeline).
+2. **R command line** → `--plot-*` options (defaults below; `Rscript scripts/2.2phosRate_subtyping.R --help`).
+
+| `config.yaml` (`plot:`) | R option | Default | Meaning |
+| :--- | :--- | :--- | :--- |
+| `width` / `height` / `dpi` | `--plot-width` / `--plot-height` / `--plot-dpi` | `8` / `6` / `300` | Figure size in inches and resolution |
+| `base_size` | `--plot-base-size` | `13` | `theme_classic()` base size |
+| `title_size` | `--plot-title-size` | `22` | Bold title, left aligned to the panel |
+| `axis_title_size` | `--plot-axis-title-size` | `15` | Bold axis titles |
+| `axis_text_size` | `--plot-axis-text-size` | `13` | Bold tick labels |
+| `legend_size` | `--plot-legend-size` | `14` | Legend on top, left aligned (`N` / `T`) |
+| `caption_size` | `--plot-caption-size` | `11` | `Low/Middle/High` statistics caption (plain, not bold) |
+| `caption_color` | `--plot-caption-color` | `grey30` | Caption text color |
+| `line_width` | `--plot-line-width` | `2.0` | Fitted-curve line width |
+| `point_size` / `point_alpha` | `--plot-point-size` / `--plot-point-alpha` | `1.8` / `0.55` | Scatter points |
+| `ribbon_alpha` | `--plot-ribbon-alpha` | `0.15` | Confidence band around each fitted curve |
+| `spine_width` / `tick_width` / `tick_length` | `--plot-spine-width` / `--plot-tick-width` / `--plot-tick-length` | `1.2` / `1.2` / `4` | Axis lines (left + bottom only) and ticks |
+| `dash_color` / `dash_width` | `--plot-dash-color` / `--plot-dash-width` | `grey45` / `1.1` | Low/middle/high interval boundaries |
+| `panel_low` / `panel_mid` / `panel_high` | `--plot-panel-low` / `--plot-panel-mid` / `--plot-panel-high` | `#F7F9FC` / `#FFF9EF` / `#F9F5FA` | Interval background panels |
+| `group_labels` | `--plot-group-labels` | `N,T` | Legend labels for Control, Case |
+| `n_representative` | `--plot-n-representative` | `5` | Sites per global class (UP/DOWN/NS) for representative plots; requires `--global-phosprotein-diff` |
+
+Group colors are shared with the routing figures: `--color-control` (default `#012da7`)
+and `--color-case` (default `#ff7f00`). When the pipeline is used, the same values are
+passed through `DifferentialConfig` (`plot_*` fields in `config/analysis_config.py`).
+
+---
+
 ## 📄 License
 
 Released under the terms of the `LICENSE` file.

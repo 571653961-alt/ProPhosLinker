@@ -283,7 +283,7 @@ option_list <- list(
   make_option(
     c("--module_cor_threshhold"),
     type = "double",
-    default = 0.8,
+    default = 0.5,
     help = "Correlation threshold for significant module pairs [default: %default]",
     metavar = "NUMERIC"
   ),
@@ -791,7 +791,7 @@ plt_by_group <- plotSankey_by_group(clusters_df_by_group2,
                                     omics1_name = omics1_name, 
                                     omics2_name = omics2_name)
 ggsave(file.path(NMF_outdir, "molecular_subtyping_sankey_by_group.png"), 
-       plt_by_group, width = 8, height = 6)
+       plt_by_group, width = 8, height = 14)
 
 cat("✅ NMF Molecular Subtyping completed. Results saved to:", NMF_outdir, "\n")
 

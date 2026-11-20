@@ -30,7 +30,7 @@ class BasicConfig:
     """Basic configuration class"""
     
     # Base script path
-    script_path: ClassVar[str] = Path(__file__).resolve().parent.parent / "scripts"
+    script_path: ClassVar[str] = Path(__file__).parent.parent / "scripts"
     
     # Output directory
     outdir: ClassVar[Union[str, Path]] = './results'
@@ -51,6 +51,7 @@ class BasicConfig:
     pro_diff_q_val: ClassVar[float] = 0.05
     phos_diff_q_val: ClassVar[float] = 0.05
     phosRate_log2FC: ClassVar[float] = 1
+    log_transform: ClassVar[bool] = True  # Whether to apply log2(x+1) in diff analysis
     
     # Identifier type
     identified_type: ClassVar[Literal['UNIPROT', 'SYMBOL']] = 'UNIPROT'
@@ -75,6 +76,7 @@ class BasicConfig:
             'pro_diff_q_val': cls.pro_diff_q_val,
             'phos_diff_q_val': cls.phos_diff_q_val,
             'phosRate_log2FC': cls.phosRate_log2FC,
+            'log_transform': cls.log_transform,
             'identified_type': cls.identified_type,
             'disease': cls.disease,
             'network_log2FC': cls.network_log2FC

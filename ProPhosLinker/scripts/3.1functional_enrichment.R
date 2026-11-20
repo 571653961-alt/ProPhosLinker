@@ -290,7 +290,19 @@ two_omicses_GO_enrichment <- function(omics1_list, omics2_list,
                                       pvalueCutoff = 0.05, showCategory = 15,
                                       enrich_fromType = 'UNIPROT',
                                       color_gradient_low = "#175663",
-                                      color_gradient_high = "#90362d") {
+                                      color_gradient_high = "#90362d",
+                                      # --- 新增标准化控制参数 ---
+                                      style_title_size = 158,    # 标题字号
+                                      style_axis_size = 24,     # 轴标题字号
+                                      style_text_size = 24,     # 坐标轴刻度(GO Term)字号
+                                      style_facet_size = 26,    # 分面标签字号
+                                      style_legend_size = 24,   # 图例标题及文字字号
+                                      style_width = 10,         # 图片宽度
+                                      style_height = 8,        # 图片高度
+                                      legend_key_size = 1.0,    # 图例图标大小
+                                      margin_val = 1            # 页边距
+                                      # ------------------------
+                                      ) {
   
   # Create a named list of gene clusters for comparison
   compare_lists <- list(omics1_list, omics2_list)
@@ -354,76 +366,128 @@ two_omicses_GO_enrichment <- function(omics1_list, omics2_list,
   #---------------------------------------------------------------------------
   # Create GO enrichment dot plot
   #---------------------------------------------------------------------------
+  # go_compare_GO <- ggplot(go_compare_clean, aes(x = Cluster, y = Description)) +
+  #   
+  #   # Add points with size = gene count, color = -log10(adjusted p-value)
+  #   geom_point(aes(size = Count, color = log_p_adjust), alpha = 0.8) +
+  #   
+  #   # Facet by GO ontology with free y-axis scales
+  #   facet_grid(ONTOLOGY ~ .,
+  #              scales = "free_y",
+  #              space = "free_y") +
+  #   
+  #   # Color gradient for -log10(p-values)
+  #   scale_color_gradient(low = color_gradient_low, high = color_gradient_high,
+  #                        name = "-log10(Adjusted P-value)") +
+  #   
+  #   # Size scale for point sizes
+  #   scale_size_continuous(range = c(2, 8),
+  #                         name = paste0(omics1_name, "/", omics2_name, " Count"),
+  #                         guide = guide_legend(
+  #                           override.aes = list(color = "grey60")
+  #                         )) +
+  #   
+  #   # Axis labels and title
+  #   labs(x = "Protein Ratio",
+  #        y = "",
+  #        title = paste0("GO Enrichment Comparison: ", omics1_name, " vs ", omics2_name)) +
+  #   
+  #   # Theme customization
+  #   theme_bw() +
+  #   theme(
+  #     # Title settings
+  #     plot.title = element_text(hjust = 0.5, face = "bold", size = 16,
+  #                               margin = margin(b = 20)),
+  #     
+  #     # Facet strip settings
+  #     strip.text = element_text(size = 12, face = "bold",
+  #                               margin = margin(t = 5, r = 5, b = 5, l = 5)),
+  #     strip.background = element_rect(fill = "lightgray"),
+  #     
+  #     # Axis settings
+  #     axis.text.x = element_text(size = 10, color = "grey20", face = "bold"),
+  #     axis.text.y = element_text(size = 10, color = "grey20", face = "bold"),
+  #     axis.title.x = element_text(size = 10, face = "bold",
+  #                                 margin = margin(t = 15)),
+  #     
+  #     # Legend settings
+  #     legend.title = element_text(size = 10, face = "bold"),
+  #     legend.text = element_text(size = 8),
+  #     legend.key.size = unit(0.8, "cm"),
+  #     
+  #     # Grid and margins
+  #     panel.grid.major = element_line(color = "grey90", linewidth = 0.5),
+  #     panel.grid.minor = element_blank(),
+  #     plot.margin = margin(1, 1, 1, 1, "cm")
+  #   ) +
+  #   
+  #   # Legend customization
+  #   guides(
+  #     fill = guide_colorbar(barheight = unit(4, "cm")),
+  #     shape = guide_legend(
+  #       override.aes = list(
+  #         fill = "grey80",
+  #         size = 6,
+  #         stroke = 0.5
+  #       )
+  #     )
+  #   )
+  # 
+  # # Save plot to file
+  # ggsave(paste0(outdir, "/", omics1_name, "_", omics2_name, "_GO_enrichment.png"),
+  #        go_compare_GO, width = 12, height = 8, dpi = 300)
+  
+  # 3. 绘图
   go_compare_GO <- ggplot(go_compare_clean, aes(x = Cluster, y = Description)) +
-    
-    # Add points with size = gene count, color = -log10(adjusted p-value)
     geom_point(aes(size = Count, color = log_p_adjust), alpha = 0.8) +
     
-    # Facet by GO ontology with free y-axis scales
-    facet_grid(ONTOLOGY ~ .,
-               scales = "free_y",
-               space = "free_y") +
+    # 分面设置
+    facet_grid(ONTOLOGY ~ ., scales = "free_y", space = "free_y") +
     
-    # Color gradient for -log10(p-values)
+    # 颜色与大小比例尺
     scale_color_gradient(low = color_gradient_low, high = color_gradient_high,
-                         name = "-log10(Adjusted P-value)") +
+                         name = expression(bold(-log[10](p.adj)))) +
     
-    # Size scale for point sizes
-    scale_size_continuous(range = c(2, 8),
-                          name = paste0(omics1_name, "/", omics2_name, " Count"),
-                          guide = guide_legend(
-                            override.aes = list(color = "grey60")
-                          )) +
+    scale_size_continuous(range = c(3, 10), # 增大点的大小范围
+                          name = "Gene Count") +
     
-    # Axis labels and title
-    labs(x = "Protein Ratio",
-         y = "",
+    # 标签与主题
+    labs(x = "Comparison Groups", y = NULL,
          title = paste0("GO Enrichment Comparison: ", omics1_name, " vs ", omics2_name)) +
-    
-    # Theme customization
     theme_bw() +
     theme(
-      # Title settings
-      plot.title = element_text(hjust = 0.5, face = "bold", size = 16,
-                                margin = margin(b = 20)),
+      # 标题
+      plot.title = element_text(hjust = 0.5, face = "bold", size = style_title_size, margin = margin(b = 20)),
       
-      # Facet strip settings
-      strip.text = element_text(size = 12, face = "bold",
-                                margin = margin(t = 5, r = 5, b = 5, l = 5)),
-      strip.background = element_rect(fill = "lightgray"),
+      # 分面标签 (BP/MF/CC)
+      strip.text = element_text(size = style_facet_size, face = "bold"),
+      strip.background = element_rect(fill = "grey90"),
       
-      # Axis settings
-      axis.text.x = element_text(size = 10, color = "grey20", face = "bold"),
-      axis.text.y = element_text(size = 10, color = "grey20", face = "bold"),
-      axis.title.x = element_text(size = 10, face = "bold",
-                                  margin = margin(t = 15)),
+      # 坐标轴刻度文字 (GO Terms)
+      axis.text.x = element_text(size = style_text_size + 2, color = "black", face = "bold"),
+      axis.text.y = element_text(size = style_text_size, color = "black"),
       
-      # Legend settings
-      legend.title = element_text(size = 10, face = "bold"),
-      legend.text = element_text(size = 8),
-      legend.key.size = unit(0.8, "cm"),
+      # 坐标轴标题
+      axis.title.x = element_text(size = style_axis_size, face = "bold", margin = margin(t = 15)),
       
-      # Grid and margins
-      panel.grid.major = element_line(color = "grey90", linewidth = 0.5),
+      # 图例
+      legend.title = element_text(size = style_legend_size, face = "bold"),
+      legend.text = element_text(size = style_legend_size - 2),
+      legend.key.size = unit(legend_key_size, "cm"),
+      
+      # 网格线与边距
+      panel.grid.major = element_line(color = "grey92"),
       panel.grid.minor = element_blank(),
-      plot.margin = margin(1, 1, 1, 1, "cm")
-    ) +
-    
-    # Legend customization
-    guides(
-      fill = guide_colorbar(barheight = unit(4, "cm")),
-      shape = guide_legend(
-        override.aes = list(
-          fill = "grey80",
-          size = 6,
-          stroke = 0.5
-        )
-      )
+      plot.margin = margin(margin_val, margin_val, margin_val, margin_val, "cm")
     )
   
-  # Save plot to file
-  ggsave(paste0(outdir, "/", omics1_name, "_", omics2_name, "_GO_enrichment.png"),
-         go_compare_GO, width = 12, height = 8, dpi = 300)
+  # 4. 保存图片
+  save_name <- file.path(outdir, paste0(omics1_name, "_", omics2_name, "_GO_enrichment.png"))
+  ggsave(save_name, plot = go_compare_GO, width = style_width, height = style_height, dpi = 300)
+  
+  return(go_compare_GO)
+  
+  
 }
 
 #===============================================================================
@@ -452,7 +516,18 @@ two_omicses_KEGG_enrichment <- function(omics1_list, omics2_list,
                                         pvalueCutoff = 0.05, showCategory = 15,
                                         enrich_fromType = 'UNIPROT',
                                         color_gradient_low = "#175663",
-                                        color_gradient_high = "#90362d") {
+                                        color_gradient_high = "#90362d",
+                                        # --- 新增标准化控制参数 ---
+                                        style_title_size = 28,    # 标题字号
+                                        style_axis_size = 24,     # 轴标题字号
+                                        style_text_size = 24,     # 坐标轴刻度(Pathway Name)字号
+                                        style_legend_size = 24,   # 图例字号
+                                        style_width = 12,         # 图片宽度
+                                        style_height = 10,        # 图片高度
+                                        legend_key_size = 1.0,    # 图例图标大小
+                                        margin_val = 1            # 页边距
+                                        # ------------------------
+                                        ) {
   
   # Create named list of gene clusters
   compare_lists <- list(omics1_list, omics2_list)
@@ -533,59 +608,104 @@ two_omicses_KEGG_enrichment <- function(omics1_list, omics2_list,
   #---------------------------------------------------------------------------
   # Create KEGG enrichment dot plot
   #---------------------------------------------------------------------------
+  # p_kk_compare <- ggplot(kk_compare_data_clean, aes(x = Cluster, y = Description)) +
+  #   
+  #   # Add points with size = gene count, color = -log10(adjusted p-value)
+  #   geom_point(aes(size = Count, color = log_p_adjust), alpha = 0.8) +
+  #   
+  #   # Color gradient for -log10(p-values)
+  #   scale_color_gradient(low = color_gradient_low, high = color_gradient_high,
+  #                        name = "-log10(Adjusted P-value)") +
+  #   
+  #   # Size scale for points
+  #   scale_size_continuous(range = c(2, 8),
+  #                         name = paste0(omics1_name, " / ", omics2_name, " Count"),
+  #                         guide = guide_legend(
+  #                           override.aes = list(color = "grey60")
+  #                         )) +
+  #   
+  #   # Labels and title
+  #   labs(x = "Protein Ratio",
+  #        y = "",
+  #        title = paste0("KEGG Enrichment Comparison: ", omics1_name, " vs ", omics2_name)) +
+  #   
+  #   # Theme customization
+  #   theme_bw() +
+  #   theme(
+  #     plot.title = element_text(hjust = 0.5, face = "bold", size = 16,
+  #                               margin = margin(b = 20)),
+  #     axis.text.x = element_text(size = 10, color = "grey20", face = "bold"),
+  #     axis.text.y = element_text(size = 10, color = "grey20", face = "bold"),
+  #     axis.title.x = element_text(size = 10, face = "bold",
+  #                                 margin = margin(t = 15)),
+  #     legend.title = element_text(size = 10, face = "bold"),
+  #     legend.text = element_text(size = 8),
+  #     legend.key.size = unit(0.8, "cm"),
+  #     panel.grid.major = element_line(color = "grey90", linewidth = 0.5),
+  #     panel.grid.minor = element_blank(),
+  #     plot.margin = margin(1, 1, 1, 1, "cm")
+  #   ) +
+  #   
+  #   # Legend customization
+  #   guides(
+  #     fill = guide_colorbar(barheight = unit(4, "cm")),
+  #     shape = guide_legend(
+  #       override.aes = list(
+  #         fill = "grey80",
+  #         size = 6,
+  #         stroke = 0.5
+  #       )
+  #     )
+  #   )
+  # 
+  # # Save plot to file
+  # ggsave(paste0(outdir, "/", omics1_name, "_", omics2_name, "_KEGG_enrichment.png"),
+  #        p_kk_compare, width = 12, height = 8, dpi = 300)
+  
+  # 3. 绘图逻辑
   p_kk_compare <- ggplot(kk_compare_data_clean, aes(x = Cluster, y = Description)) +
-    
-    # Add points with size = gene count, color = -log10(adjusted p-value)
     geom_point(aes(size = Count, color = log_p_adjust), alpha = 0.8) +
     
-    # Color gradient for -log10(p-values)
+    # 颜色梯度定义
     scale_color_gradient(low = color_gradient_low, high = color_gradient_high,
-                         name = "-log10(Adjusted P-value)") +
+                         name = expression(bold(-log[10](p.adj)))) +
     
-    # Size scale for points
-    scale_size_continuous(range = c(2, 8),
-                          name = paste0(omics1_name, " / ", omics2_name, " Count"),
-                          guide = guide_legend(
-                            override.aes = list(color = "grey60")
-                          )) +
+    # 点的大小范围优化
+    scale_size_continuous(range = c(4, 12), 
+                          name = "Gene Count") +
     
-    # Labels and title
-    labs(x = "Protein Ratio",
-         y = "",
+    # 标签与标题
+    labs(x = "Comparison Groups", y = NULL,
          title = paste0("KEGG Enrichment Comparison: ", omics1_name, " vs ", omics2_name)) +
     
-    # Theme customization
     theme_bw() +
     theme(
-      plot.title = element_text(hjust = 0.5, face = "bold", size = 16,
-                                margin = margin(b = 20)),
-      axis.text.x = element_text(size = 10, color = "grey20", face = "bold"),
-      axis.text.y = element_text(size = 10, color = "grey20", face = "bold"),
-      axis.title.x = element_text(size = 10, face = "bold",
-                                  margin = margin(t = 15)),
-      legend.title = element_text(size = 10, face = "bold"),
-      legend.text = element_text(size = 8),
-      legend.key.size = unit(0.8, "cm"),
-      panel.grid.major = element_line(color = "grey90", linewidth = 0.5),
+      # 标题设置
+      plot.title = element_text(hjust = 0.5, face = "bold", size = style_title_size, margin = margin(b = 20)),
+      
+      # 坐标轴刻度字体 (Pathway 描述)
+      axis.text.x = element_text(size = style_text_size + 2, color = "black", face = "bold"),
+      axis.text.y = element_text(size = style_text_size, color = "black"),
+      
+      # 轴标题
+      axis.title.x = element_text(size = style_axis_size, face = "bold", margin = margin(t = 15)),
+      
+      # 图例控制
+      legend.title = element_text(size = style_legend_size, face = "bold"),
+      legend.text = element_text(size = style_legend_size - 2),
+      legend.key.size = unit(legend_key_size, "cm"),
+      
+      # 面板网格与间距
+      panel.grid.major = element_line(color = "grey92"),
       panel.grid.minor = element_blank(),
-      plot.margin = margin(1, 1, 1, 1, "cm")
-    ) +
-    
-    # Legend customization
-    guides(
-      fill = guide_colorbar(barheight = unit(4, "cm")),
-      shape = guide_legend(
-        override.aes = list(
-          fill = "grey80",
-          size = 6,
-          stroke = 0.5
-        )
-      )
+      plot.margin = margin(margin_val, margin_val, margin_val, margin_val, "cm")
     )
   
-  # Save plot to file
-  ggsave(paste0(outdir, "/", omics1_name, "_", omics2_name, "_KEGG_enrichment.png"),
-         p_kk_compare, width = 12, height = 8, dpi = 300)
+  # 4. 保存图片
+  save_path <- file.path(outdir, paste0(omics1_name, "_", omics2_name, "_KEGG_enrichment.png"))
+  ggsave(save_path, plot = p_kk_compare, width = style_width, height = style_height, dpi = 300)
+  
+  return(p_kk_compare)
 }
 
 #===============================================================================
@@ -635,7 +755,17 @@ omics_enrichment <- function(pro_diff_path, phos_diff_path, phos_pro_path,
                             outdir, pvalueCutoff, GO_showCategory,
                             enrich_fromType = enrich_fromType,
                             color_gradient_low = color_gradient_low,
-                            color_gradient_high = color_gradient_high)
+                            color_gradient_high = color_gradient_high,
+                            # 以下参数按需调整
+                            style_title_size = 28,      # 标题字号（点数）
+                            style_axis_size = 24,       # 轴标题字号
+                            style_text_size = 22,       # 轴刻度文字（GO term）字号
+                            style_facet_size = 24,      # 分面标签（BP/MF/CC）字号
+                            style_legend_size = 22,     # 图例标题及文字字号
+                            style_width = 12,           # 图片宽度（英寸）
+                            style_height = 10,          # 图片高度（英寸）
+                            legend_key_size = 1.0,
+                            margin_val = 1)
   
   #---------------------------------------------------------------------------
   # KEGG Enrichment Comparison

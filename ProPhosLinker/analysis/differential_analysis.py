@@ -82,6 +82,7 @@ class DifferentialAnalysis:
             "--omics2_name", self.config.omics2_name,
             "--quadrant_plot_up_color", self.config.omics_diff_quadrant_pro_color,
             "--quadrant_plot_down_color", self.config.omics_diff_quadrant_phos_color,
+            "--log_transform", str(self.config.log_transform).upper(),
             # "--verbose"
         ]
 
@@ -112,78 +113,185 @@ class DifferentialAnalysis:
             return False
         return True
     
+    ## old version of phosrate_subtyping, commented out for now
+    # def phosrate_subtyping(self):
+    #     """
+    #     2.2 Phosphorylation-rate subtyping.
+
+    #     Builds a `PhosRateSubtyping` configuration and runs the quantile-based
+    #     phosphorylation-rate analysis pipeline.
+    #     """
+    #     print("🧬 Starting phosphorylation-rate subtyping...")
+        
+    #     try:
+    #         # Lazy import to keep the base import surface light
+    #         from . import phos_rate_subtyping
+            
+    #         # Expected filenames produced by step 2.1
+    #         group1, group2 = self.config.group_comparing.split(':')
+    #         prodiff_file = f"{group1}_vs_{group2}_{self.config.omics1_name}.tsv"
+    #         phosphoprodiff_file = f"{group1}_vs_{group2}_{self.config.omics2_name}.tsv"
+            
+    #         # Build configuration object
+    #         PhosratesubtypingConfig = phos_rate_subtyping.PhosRateSubtyping(
+    #             profile=self.config.profile,
+    #             phosphoprofile=self.config.phosfile,
+    #             phosphopro_pro_cor=self.config.mappingfile,
+    #             prodiff= Path(self.config.outdir).parent / Path(ResultDirConfig.omics_differential_analysis) / Path(prodiff_file),
+    #             phosphoprodiff= Path(self.config.outdir).parent / Path(ResultDirConfig.omics_differential_analysis) / Path(phosphoprodiff_file),
+    #             group_info=self.config.sample_group,
+    #             outdir=Path(self.config.outdir).parent / Path(ResultDirConfig.phosrate_subtyping),
+    #             omics1_name=self.config.omics1_name,
+    #             omics2_name=self.config.omics2_name,
+    #             group_vs=self.config.group_comparing,
+    #             phos_rate_FC=self.config.phos_rate_FC,
+    #             quantile_rank=self.config.quantile_rank,
+    #             quantile_rank_step=self.config.quantile_rank_step,
+    #             plot_sites_num=self.config.plot_sites_num,
+    #             frac_param=self.config.frac_param,
+    #             cluster_num=self.config.cluster_num,
+    #             vs_total_phos_rate_upper=self.config.vs_total_phos_rate_upper,
+    #             vs_total_phos_rate_lower=self.config.vs_total_phos_rate_lower,
+    #             top_tail_diff_site_num=self.config.top_tail_diff_site_num,
+    #             r_script_path=ScriptConfig.get_full_path('phosRate_quantile_subtyping_rscript_path'),
+    #             raw_pro_point_color=self.config.raw_pro_point_color,
+    #             fitted_pro_point_color=self.config.fitted_pro_point_color,
+    #             fitted_pro_line_color=self.config.fitted_pro_line_color,
+    #             pro_fc_line_color=self.config.pro_fc_line_color,
+    #             total_phos_rate_line_color=self.config.total_phos_rate_line_color,
+    #             color_lst=self.config.color_lst,
+    #             Mfuzz_pluscolor=self.config.Mfuzz_pluscolor,
+    #             Mfuzz_minuscolor=self.config.Mfuzz_minuscolor,
+    #             Mfuzz_allcolor=self.config.Mfuzz_allcolor,
+    #             Mfuzz_onlyupcolor=self.config.Mfuzz_onlyupcolor,
+    #             Mfuzz_onlydowncolor=self.config.Mfuzz_onlydowncolor,
+    #             Mfuzz_updowncolor=self.config.Mfuzz_updowncolor,
+    #             Mfuzz_notsigcolor=self.config.Mfuzz_notsigcolor
+    #         )
+            
+    #         # 执行磷酸化率分型分析
+    #         success = phos_rate_subtyping.phos_rate_subtyping(PhosratesubtypingConfig)
+          
+    #         if success:
+    #             print("✅ Phosphorylation-rate subtyping completed")
+    #         else:
+    #             print("❌ Phosphorylation-rate subtyping failed")
+            
+    #         return success
+            
+    #     except ImportError:
+    #         print("❌ Failed to import `phos_rate_subtyping` module")
+    #         return False
+    #     except Exception as e:
+    #         print(f"❌ Phosphorylation-rate subtyping error: {e}")
+    #         return False
+    ## old version of phosrate_subtyping, commented out for now
+    
     def phosrate_subtyping(self):
         """
-        2.2 Phosphorylation-rate subtyping.
+        2.2 Parent-protein-overlap routed phosphorylation response analysis.
 
-        Builds a `PhosRateSubtyping` configuration and runs the quantile-based
-        phosphorylation-rate analysis pipeline.
+        Calls the new standalone R script directly.
         """
         print("🧬 Starting phosphorylation-rate subtyping...")
-        
+
         try:
-            # Lazy import to keep the base import surface light
-            from . import phos_rate_subtyping
-            
-            # Expected filenames produced by step 2.1
-            group1, group2 = self.config.group_comparing.split(':')
-            prodiff_file = f"{group1}_vs_{group2}_{self.config.omics1_name}.tsv"
-            phosphoprodiff_file = f"{group1}_vs_{group2}_{self.config.omics2_name}.tsv"
-            
-            # Build configuration object
-            PhosratesubtypingConfig = phos_rate_subtyping.PhosRateSubtyping(
-                profile=self.config.profile,
-                phosphoprofile=self.config.phosfile,
-                phosphopro_pro_cor=self.config.mappingfile,
-                prodiff= Path(self.config.outdir).parent / Path(ResultDirConfig.omics_differential_analysis) / Path(prodiff_file),
-                phosphoprodiff= Path(self.config.outdir).parent / Path(ResultDirConfig.omics_differential_analysis) / Path(phosphoprodiff_file),
-                group_info=self.config.sample_group,
-                outdir=Path(self.config.outdir).parent / Path(ResultDirConfig.phosrate_subtyping),
-                omics1_name=self.config.omics1_name,
-                omics2_name=self.config.omics2_name,
-                group_vs=self.config.group_comparing,
-                phos_rate_FC=self.config.phos_rate_FC,
-                quantile_rank=self.config.quantile_rank,
-                quantile_rank_step=self.config.quantile_rank_step,
-                plot_sites_num=self.config.plot_sites_num,
-                frac_param=self.config.frac_param,
-                cluster_num=self.config.cluster_num,
-                vs_total_phos_rate_upper=self.config.vs_total_phos_rate_upper,
-                vs_total_phos_rate_lower=self.config.vs_total_phos_rate_lower,
-                top_tail_diff_site_num=self.config.top_tail_diff_site_num,
-                r_script_path=ScriptConfig.get_full_path('phosRate_quantile_subtyping_rscript_path'),
-                raw_pro_point_color=self.config.raw_pro_point_color,
-                fitted_pro_point_color=self.config.fitted_pro_point_color,
-                fitted_pro_line_color=self.config.fitted_pro_line_color,
-                pro_fc_line_color=self.config.pro_fc_line_color,
-                total_phos_rate_line_color=self.config.total_phos_rate_line_color,
-                color_lst=self.config.color_lst,
-                Mfuzz_pluscolor=self.config.Mfuzz_pluscolor,
-                Mfuzz_minuscolor=self.config.Mfuzz_minuscolor,
-                Mfuzz_allcolor=self.config.Mfuzz_allcolor,
-                Mfuzz_onlyupcolor=self.config.Mfuzz_onlyupcolor,
-                Mfuzz_onlydowncolor=self.config.Mfuzz_onlydowncolor,
-                Mfuzz_updowncolor=self.config.Mfuzz_updowncolor,
-                Mfuzz_notsigcolor=self.config.Mfuzz_notsigcolor
+            outdir = (
+                Path(self.config.outdir).parent
+                / Path(ResultDirConfig.phosrate_subtyping)
             )
+            outdir.mkdir(parents=True, exist_ok=True)
+
+            # Temporary standalone script path for debugging.
+            r_script = ScriptConfig.get_full_path('phosRate_quantile_subtyping_rscript_path')
+
+            if not r_script.exists():
+                raise FileNotFoundError(f"R script not found: {r_script}")
+
+            cmd = [
+                "Rscript",
+                to_r_path(r_script),
+                "--profile", to_r_path(self.config.profile),
+                "--phosfile", to_r_path(self.config.phosfile),
+                "--sample_group", to_r_path(self.config.sample_group),
+                "--mapping_list", to_r_path(self.config.mappingfile),
+                "--outdir", to_r_path(outdir),
+                #   "--robust_quantiles", "5%,95%",
+                #   "--high-overlap-coefficient", "0.50",
+                #   "--high-overlap-iqr-ratio", "0.50",
+                #   "--partial-overlap-coefficient", "0.20",
+                #   "--fdr-threshold", "0.05",
+                #   "--effect-threshold-log2", "0.50",
+                #   "--conditional-spline-df", "3",
+                #   "--prediction-grid-points", "180",
+                #   "--support-tolerance", "0",
+                #   "--verbose",
             
-            # 执行磷酸化率分型分析
-            success = phos_rate_subtyping.phos_rate_subtyping(PhosratesubtypingConfig)
-          
-            if success:
-                print("✅ Phosphorylation-rate subtyping completed")
-            else:
-                print("❌ Phosphorylation-rate subtyping failed")
+                "--robust_quantiles", str(self.config.robust_quantiles),
+                "--high-overlap-coefficient", str(self.config.high_overlap_coefficient),
+                "--high-overlap-iqr-ratio", str(self.config.high_overlap_iqr_ratio),
+                "--partial-overlap-coefficient", str(self.config.partial_overlap_coefficient),
+                "--fdr-threshold", str(self.config.fdr_threshold),
+                "--effect-threshold-log2", str(self.config.effect_threshold_log2),
+                "--conditional-spline-df", str(self.config.conditional_spline_df),
+                "--prediction-grid-points", str(self.config.prediction_grid_points),
+                "--support-tolerance", str(self.config.support_tolerance),
+                "--color-control", str(self.config.color_control),
+                "--color-case", str(self.config.color_case),
+                "--color-unavailable", str(self.config.color_unavailable),
+                "--color-global", str(self.config.color_global),
+                "--color-conditional", str(self.config.color_conditional),
+                # Conditional-curve figure style (defaults live in the R script)
+                "--plot-width", str(self.config.plot_width),
+                "--plot-height", str(self.config.plot_height),
+                "--plot-dpi", str(self.config.plot_dpi),
+                "--plot-base-size", str(self.config.plot_base_size),
+                "--plot-title-size", str(self.config.plot_title_size),
+                "--plot-axis-title-size", str(self.config.plot_axis_title_size),
+                "--plot-axis-text-size", str(self.config.plot_axis_text_size),
+                "--plot-legend-size", str(self.config.plot_legend_size),
+                "--plot-caption-size", str(self.config.plot_caption_size),
+                "--plot-line-width", str(self.config.plot_line_width),
+                "--plot-point-size", str(self.config.plot_point_size),
+                "--plot-point-alpha", str(self.config.plot_point_alpha),
+                "--plot-ribbon-alpha", str(self.config.plot_ribbon_alpha),
+                "--plot-spine-width", str(self.config.plot_spine_width),
+                "--plot-tick-width", str(self.config.plot_tick_width),
+                "--plot-tick-length", str(self.config.plot_tick_length),
+                "--plot-dash-color", str(self.config.plot_dash_color),
+                "--plot-dash-width", str(self.config.plot_dash_width),
+                "--plot-panel-low", str(self.config.plot_panel_low),
+                "--plot-panel-mid", str(self.config.plot_panel_mid),
+                "--plot-panel-high", str(self.config.plot_panel_high),
+                "--plot-caption-color", str(self.config.plot_caption_color),
+                "--plot-group-labels", str(self.config.plot_group_labels),
+                "--plot-n-representative", str(self.config.plot_n_representative),
+                "--verbose",
+            ]
             
-            return success
-            
-        except ImportError:
-            print("❌ Failed to import `phos_rate_subtyping` module")
+            # Optional: pass global phosphoprotein diff for per-class representative plots
+            if getattr(self.config, 'global_phosprotein_diff', ''):
+                cmd.insert(-1, "--global-phosprotein-diff")
+                cmd.insert(-1, to_r_path(Path(self.config.global_phosprotein_diff)))
+
+            print(f"🔎 Running command:\n{' '.join(cmd)}")
+            result = subprocess.run(cmd, capture_output=True, text=True)
+
+            if result.stdout:
+                print(f"📤 STDOUT:\n{result.stdout}")
+
+            if result.returncode == 0:
+                print(f"✅ Phosphorylation-rate subtyping completed: {outdir}")
+                return True
+
+            print(f"❌ Phosphorylation-rate subtyping failed (exit code {result.returncode})")
+            print(f"📥 STDERR:\n{result.stderr}")
             return False
+
         except Exception as e:
             print(f"❌ Phosphorylation-rate subtyping error: {e}")
             return False
-    
+      
     def stable_differential_network(self):
         """
         2.3 Stable differential network analysis.
@@ -282,7 +390,9 @@ class DifferentialAnalysis:
             
             # 2) Run sub-analyses
             success_omics = self.omics_differential_analysis()
+            # 
             success_phosrate = self.phosrate_subtyping()
+            
             success_network = self.stable_differential_network()
             
             # 3) Summarize

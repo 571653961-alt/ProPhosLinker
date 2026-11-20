@@ -44,7 +44,8 @@ class ScriptConfig:
     
     # Differential analysis scripts
     omics_differential_rscript_path: ClassVar[Union[str, Path]] = "2.1omics_differential_analysis.R"
-    phosRate_quantile_subtyping_rscript_path: ClassVar[Union[str, Path]] = "2.2phosRate_quantile_subtyping.R"
+    # phosRate_quantile_subtyping_rscript_path: ClassVar[Union[str, Path]] = "2.2phosRate_quantile_subtyping.R"
+    phosRate_quantile_subtyping_rscript_path: ClassVar[Union[str, Path]] = "2.2phosRate_subtyping.R"
     differential_network_rscript_path: ClassVar[Union[str, Path]] = "2.3differential_network.R"
     
     # Functional analysis scripts

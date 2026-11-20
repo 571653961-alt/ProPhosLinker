@@ -85,7 +85,7 @@ def main(pro_file, phos_file, sample_group, mapping_file,
          pro_diff_file=None, phos_diff_file=None,
          pro_FC=2, pro_diff_q_val=0.05,
          phos_FC=2, phos_diff_q_val=0.05,
-         phosRate_FC=2, disease=None,
+        disease=None,
          network_FC=2, neo4j_path=None, username='neo4j',
          password='neo4j', steps='all', config_data=None):
     
@@ -100,9 +100,7 @@ def main(pro_file, phos_file, sample_group, mapping_file,
     ########## Parameter update interface ###########
     pro_log2FC = math.log2(pro_FC)
     phos_log2FC = math.log2(phos_FC)
-    phosRate_log2FC = math.log2(phosRate_FC)
     network_log2FC = math.log2(network_FC)
-    # BasicConfig.update_config(identified_type = 'SYMBOL')
     BasicConfig.update_config(disease=disease)
     BasicConfig.update_config(identified_type=identified_type)
     BasicConfig.update_config(outdir=Path(outdir).resolve())
@@ -114,7 +112,6 @@ def main(pro_file, phos_file, sample_group, mapping_file,
     BasicConfig.update_config(pro_diff_q_val=pro_diff_q_val)
     BasicConfig.update_config(phos_diff_q_val=phos_diff_q_val)
     BasicConfig.update_config(network_log2FC=network_log2FC)
-    BasicConfig.update_config(phosRate_log2FC=phosRate_log2FC)
     if disease:
         BasicConfig.update_config(disease=disease)
     if neo4j_path:
@@ -165,7 +162,12 @@ def main(pro_file, phos_file, sample_group, mapping_file,
             prodiff=prodiff_path,
             phosdiff=phosdiff_path,
             differential_network_diff_pro_path=BasicConfig.outdir / Path(ResultDirConfig.omics_differential_analysis) / Path(BasicConfig.group_comparing.replace(':', '_vs_') + '_' + BasicConfig.omics1_name + '.tsv'),
-            differential_network_diff_phos_path=BasicConfig.outdir / Path(ResultDirConfig.omics_differential_analysis) / Path(BasicConfig.group_comparing.replace(':', '_vs_') + '_' + BasicConfig.omics2_name + '.tsv')
+            differential_network_diff_phos_path=BasicConfig.outdir / Path(ResultDirConfig.omics_differential_analysis) / Path(BasicConfig.group_comparing.replace(':', '_vs_') + '_' + BasicConfig.omics2_name + '.tsv'),
+            global_phosprotein_diff=str(
+                BasicConfig.outdir / Path(ResultDirConfig.omics_differential_analysis)
+                / Path(BasicConfig.group_comparing.replace(':', '_vs_') + '_' + BasicConfig.omics2_name + '.tsv')
+            ),
+            plot_n_representative=5
         )
         # 3. Functional analysis config
         neo4j_mgr = Neo4jManager(
@@ -233,6 +235,7 @@ def main(pro_file, phos_file, sample_group, mapping_file,
             module_cor_p_adj=config_data['wgcna']['module_cor_p_adj'],
             module_cor_method=config_data['wgcna']['module_cor_method']
         )
+        plot_style = (config_data.get('phosrate_subtyping', {}) or {}).get('plot', {}) or {}
         # 2. Differential analysis config
         diff_config = DifferentialConfig(
             profile=BasicConfig.outdir / Path(ResultDirConfig.data_preprocessing) / Path(BasicConfig.omics1_name.lower() + '_preprocessed.tsv'),
@@ -243,13 +246,44 @@ def main(pro_file, phos_file, sample_group, mapping_file,
             sample_group=BasicConfig.outdir / Path(ResultDirConfig.data_preprocessing) / Path('sample_list.tsv'),
             differential_network_diff_pro_path=BasicConfig.outdir / Path(ResultDirConfig.omics_differential_analysis) / Path(BasicConfig.group_comparing.replace(':', '_vs_') + '_' + BasicConfig.omics1_name + '.tsv'),
             differential_network_diff_phos_path=BasicConfig.outdir / Path(ResultDirConfig.omics_differential_analysis) / Path(BasicConfig.group_comparing.replace(':', '_vs_') + '_' + BasicConfig.omics2_name + '.tsv'),
-            phos_rate_FC=BasicConfig.phosRate_log2FC,
-            quantile_rank=config_data['phosphorate']['quantile_rank'],
-            quantile_rank_step=config_data['phosphorate']['quantile_rank_step'],
-            cluster_num=config_data['phosphorate']['cluster_num'],
-            vs_total_phos_rate_upper=config_data['phosphorate']['vs_total_phos_rate_upper'],
-            vs_total_phos_rate_lower=config_data['phosphorate']['vs_total_phos_rate_lower'],
-            top_tail_diff_site_num=config_data['phosphorate']['top_tail_diff_site_num'],
+            robust_quantiles=config_data['phosrate_subtyping']['robust_quantiles'],
+            high_overlap_coefficient=config_data['phosrate_subtyping']['high_overlap_coefficient'],
+            high_overlap_iqr_ratio=config_data['phosrate_subtyping']['high_overlap_iqr_ratio'],
+            partial_overlap_coefficient=config_data['phosrate_subtyping']['partial_overlap_coefficient'],
+            fdr_threshold=config_data['phosrate_subtyping']['fdr_threshold'],
+            effect_threshold_log2=config_data['phosrate_subtyping']['effect_threshold_log2'],
+            conditional_spline_df=config_data['phosrate_subtyping']['conditional_spline_df'],
+            prediction_grid_points=config_data['phosrate_subtyping']['prediction_grid_points'],
+            support_tolerance=config_data['phosrate_subtyping']['support_tolerance'],
+            # 2.2 conditional-curve figure style (config.yaml: phosrate_subtyping -> plot)
+            plot_width=float(plot_style.get('width', 8.0)),
+            plot_height=float(plot_style.get('height', 6.0)),
+            plot_dpi=int(plot_style.get('dpi', 300)),
+            plot_base_size=float(plot_style.get('base_size', 11.0)),
+            plot_title_size=float(plot_style.get('title_size', 17.0)),
+            plot_axis_title_size=float(plot_style.get('axis_title_size', 13.0)),
+            plot_axis_text_size=float(plot_style.get('axis_text_size', 11.0)),
+            plot_legend_size=float(plot_style.get('legend_size', 12.0)),
+            plot_caption_size=float(plot_style.get('caption_size', 12.0)),
+            plot_line_width=float(plot_style.get('line_width', 2.4)),
+            plot_point_size=float(plot_style.get('point_size', 1.8)),
+            plot_point_alpha=float(plot_style.get('point_alpha', 0.55)),
+            plot_ribbon_alpha=float(plot_style.get('ribbon_alpha', 0.15)),
+            plot_spine_width=float(plot_style.get('spine_width', 1.2)),
+            plot_tick_width=float(plot_style.get('tick_width', 1.2)),
+            plot_tick_length=float(plot_style.get('tick_length', 4.0)),
+            plot_dash_color=str(plot_style.get('dash_color', 'grey45')),
+            plot_dash_width=float(plot_style.get('dash_width', 1.1)),
+            plot_panel_low=str(plot_style.get('panel_low', '#F7F9FC')),
+            plot_panel_mid=str(plot_style.get('panel_mid', '#FFF9EF')),
+            plot_panel_high=str(plot_style.get('panel_high', '#F9F5FA')),
+            plot_caption_color=str(plot_style.get('caption_color', 'grey30')),
+            plot_group_labels=str(plot_style.get('group_labels', 'N,T')),
+            plot_n_representative=int(plot_style.get('n_representative', 5)),
+            global_phosprotein_diff=str(
+                BasicConfig.outdir / Path(ResultDirConfig.omics_differential_analysis)
+                / Path(BasicConfig.group_comparing.replace(':', '_vs_') + '_' + BasicConfig.omics2_name + '.tsv')
+            ),
             differential_network_filter_num=config_data['differential_network']['differential_network_filter_num'],
             differential_network_FC_threshold=config_data['differential_network']['differential_network_FC_threshold'],
             differential_network_p_threshold=config_data['differential_network']['differential_network_p_threshold'],
@@ -263,6 +297,7 @@ def main(pro_file, phos_file, sample_group, mapping_file,
             differential_network_edge_p_threshold=config_data['differential_network']['differential_network_edge_p_threshold'],
             differential_network_max_subnet_num=config_data['differential_network']['differential_network_max_subnet_num'],
             differential_network_R_threshold=config_data['differential_network']['differential_network_R_threshold'],
+            log_transform=config_data['differential_analysis']['log_transform'],
         )
         # 3. Functional analysis config
         neo4j_mgr = Neo4jManager(

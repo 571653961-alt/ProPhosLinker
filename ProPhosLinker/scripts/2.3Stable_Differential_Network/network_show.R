@@ -1418,6 +1418,12 @@ Differential_subnetwork_plot <- function(subnet_dir,subnet_name,group_name = 'T-
   nodes <- read.table(nodes_path, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
   edges <- read.table(edges_path, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
   
+  # Unified intensity range for T and N color scales
+  intensity_all <- c(nodes$case_norm_mean, nodes$control_norm_mean)
+  intensity_range <- range(intensity_all, na.rm = TRUE)
+  intensity_range <- c(floor(intensity_range[1] * 100) / 100,
+                       ceiling(intensity_range[2] * 100) / 100)
+  
   g <- graph_from_data_frame(d = edges, vertices = nodes, directed = FALSE)
   
   V(g)$case_norm_mean <- nodes$case_norm_mean
@@ -1454,8 +1460,9 @@ Differential_subnetwork_plot <- function(subnet_dir,subnet_name,group_name = 'T-
       labels = c("< 0", "> 0", "Other")
     ) +
     scale_fill_gradientn(
-      name = "Case Norm Mean",
-      colours = colorRampPalette(fill_gradientn_color)(50)
+      name = "Mean Intensity",
+      colours = colorRampPalette(fill_gradientn_color)(50),
+      limits = intensity_range
     )+
     scale_shape_manual(
       name = "Omics Type",
@@ -1529,8 +1536,9 @@ Differential_subnetwork_plot <- function(subnet_dir,subnet_name,group_name = 'T-
       labels = c("< 0", "> 0", "Other")
     ) +
     scale_fill_gradientn(
-      name = "Case Norm Mean",
-      colours = colorRampPalette(fill_gradientn_color)(50)
+      name = "Mean Intensity",
+      colours = colorRampPalette(fill_gradientn_color)(50),
+      limits = intensity_range
       
     )+
     scale_shape_manual(

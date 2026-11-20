@@ -93,6 +93,12 @@ option_list <- list(
               metavar = "numeric",
               help = "Adjusted p-value threshold for statistical significance [Default: %default]"),
   
+  make_option(c("--log_transform"), 
+              type = "logical", 
+              default = TRUE, 
+              metavar = "FLAG",
+              help = "Apply log2(x+1) transformation to abundance data [Default: %default]"),
+  
   #---------------------------------------------------------------------------
   # General Parameters
   #---------------------------------------------------------------------------
@@ -402,7 +408,9 @@ DEP_analysis <- function(omics_path, group_path, outdir, PVal, log2FC,
   
   # Load and log-transform omics data
   omics_data <- read.csv(omics_path, sep = '\t', header = TRUE, row.names = 1)
-  omics_data <- log2(omics_data + 1)  # Add pseudocount to avoid log(0)
+  if (opt$log_transform) {
+    omics_data <- log2(omics_data + 1)
+  }
   
   # Load group information
   groups_data <- read.csv(group_path, sep = '\t', header = TRUE)

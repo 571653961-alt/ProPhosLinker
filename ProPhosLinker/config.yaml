@@ -28,22 +28,52 @@ wgcna:
   phosphoprotein_cor_method: "spearman"
   phosphoprotein_corFun_tmp: "bicor"
   phosphoprotein_cluster_method: "average"
-  phosphoprotein_networkType: "signed"
+  phosphoprotein_networkType: "unsigned"
   phosphoprotein_RsquareCut_val: 0.89
   phosphoprotein_mergingThresh: 0.2
   phosphoprotein_minModuleSize: 10
   phosphoprotein_SoftPower: 6
-  module_cor_threshhold: "0"
-  module_cor_p_adj: "0.05"
+module_cor_threshhold: 0.5
+module_cor_p_adj: 0.05
   module_cor_method: "spearman"
 
-phosphorate:
-  quantile_rank: 100
-  quantile_rank_step: 1
-  cluster_num: 9
-  vs_total_phos_rate_upper: 0.8
-  vs_total_phos_rate_lower: 0.2
-  top_tail_diff_site_num: 20
+phosrate_subtyping:
+  robust_quantiles: "5%,95%"
+  high_overlap_coefficient: 0.50
+  high_overlap_iqr_ratio: 0.50
+  partial_overlap_coefficient: 0.20
+  fdr_threshold: 0.05
+  effect_threshold_log2: 1.0
+  conditional_spline_df: 3
+  prediction_grid_points: 180
+  support_tolerance: 0
+  # Conditional-response curve figures (2.2phosRate_subtyping.R: make_conditional_plot).
+  # Every value maps 1:1 to the R script's --plot-* options; see README for details.
+  plot:
+    width: 8.0             # inches
+    height: 6.0            # inches
+    dpi: 300
+    base_size: 13.0        # theme_classic base size
+    title_size: 22.0       # title: bold, left aligned to the panel
+    axis_title_size: 15.0  # axis titles: bold
+    axis_text_size: 13.0   # tick labels: bold
+    legend_size: 14.0      # legend on top, left aligned
+    caption_size: 11.0     # Low/Middle/High statistics, bottom left (plain, not bold)
+    line_width: 2.0        # fitted curves
+    point_size: 1.8
+    point_alpha: 0.55
+    ribbon_alpha: 0.15     # joint-model confidence band
+    spine_width: 1.2       # axis lines (left and bottom only)
+    tick_width: 1.2
+    tick_length: 4.0       # points
+    dash_color: "grey45"   # interval boundary lines
+    dash_width: 1.1
+    panel_low: "#F7F9FC"   # low-interval background panel
+    panel_mid: "#FFF9EF"   # middle-interval background panel
+    panel_high: "#F9F5FA"  # high-interval background panel
+    caption_color: "grey30"
+    group_labels: "N,T"    # legend labels for Control, Case
+    n_representative: 5    # sites per global class (UP/DOWN/Non-significant) for representative plots; auto-wired from 2.1 PhosProtein diff
 
 differential_network:
   differential_network_filter_num: 2000

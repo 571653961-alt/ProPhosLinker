@@ -129,7 +129,7 @@ WGCNA_Analysis <- function(pro_path, phos_path, sample_group, metadata_path, out
                            phosphoprotein_RsquareCut_val = 0.890,
                            phosphoprotein_mergingThresh = 0.20, phosphoprotein_minModuleSize = 60,
                            phosphoprotein_SoftPower = NULL,
-                           module_cor_threshhold = 0.8, module_cor_p_adj = 0.05, module_cor_method = 'spearman',
+                           module_cor_threshhold = 0.5, module_cor_p_adj = 0.05, module_cor_method = 'spearman',
                            WGCNA_pro_filter_num = 5000,
                            WGCNA_phos_filter_num = 5000,
                            pro_ME_color = "#01344F",
