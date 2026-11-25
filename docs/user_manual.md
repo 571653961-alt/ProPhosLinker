@@ -28,8 +28,9 @@
    - [步骤 2: 差异分析](#步骤-2-差异分析)
    - [步骤 3: 功能分析](#步骤-3-功能分析)
 8. [输出文件说明](#8-输出文件说明)
-9. [常见问题](#9-常见问题)
-10. [引用](#10-引用)
+9. [Case Study: 胰腺导管腺癌 (PDAC)](#9-case-study-胰腺导管腺癌-pdac)
+10. [常见问题](#10-常见问题)
+11. [引用](#11-引用)
 
 ---
 
@@ -555,7 +556,130 @@ results/
 
 ---
 
-## 9. 常见问题
+## 9. Case Study: 胰腺导管腺癌 (PDAC)
+
+本节以胰腺导管腺癌（Pancreatic Ductal Adenocarcinoma, PDAC）队列为例，展示 ProPhosLinker 从原始数据到功能解读的完整分析流程。该案例数据存放于项目 `casedata/` 目录下。
+
+### 9.1 数据集概览
+
+| 数据项 | 描述 |
+|--------|------|
+| **疾病** | 胰腺导管腺癌 (PDAC) |
+| **样本量** | 215 例：140 肿瘤 (T) vs 75 正常 (N) |
+| **蛋白质组** | 8,754 种蛋白质（11,646 行，含基因名） |
+| **磷酸化组** | 16,651 个磷酸化位点，分布于 4,768 个磷酸化蛋白 |
+| **蛋白质-磷酸化位点映射** | 51,399 条对应关系 |
+| **临床信息** | 140 例患者表型数据（年龄、性别、肿瘤大小、分期等） |
+
+**输入文件：**
+
+| 文件 | 路径 | 大小 | 说明 |
+|------|------|------|------|
+| 蛋白丰度矩阵 | `casedata/protein_abundance.tsv` | 33.8 MB | 基因 × 样本，log2 强度值 |
+| 磷酸化位点丰度矩阵 | `casedata/phosphoprotein_abundance.tsv` | 89.6 MB | 磷酸化位点 × 样本 |
+| 样本分组 | `casedata/compare_groups.tsv` | 8.4 KB | 215 行，标注 T/N 分组 |
+| 蛋白-位点映射 | `casedata/protein_phosphoproSite.tsv` | 1.3 MB | 51,399 对映射关系 |
+| 临床信息 | `casedata/clinical_table_140.tsv` | 65 KB | 140 例患者的临床表型 |
+
+### 9.2 运行命令
+
+```bash
+prophoslinker \
+  --pro_file "casedata/protein_abundance.tsv" \
+  --phos_file "casedata/phosphoprotein_abundance.tsv" \
+  --sample_group "casedata/compare_groups.tsv" \
+  --mapping_file "casedata/protein_phosphoproSite.tsv" \
+  --outdir "results_new_V3" \
+  --group_comparing "T:N" \
+  --password "12345678" \
+  --metadata_file "casedata/clinical_table_140.tsv" \
+  --disease "pancreatic ductal adenocarcinoma"
+```
+
+**参数说明：**
+
+| 参数 | 值 | 含义 |
+|------|-----|------|
+| `--group_comparing "T:N"` | Tumor vs Normal | 以 T（肿瘤）为实验组，N（正常）为对照组 |
+| `--disease` | pancreatic ductal adenocarcinoma | 用于知识图谱构建的疾病上下文 |
+| `--metadata_file` | clinical_table_140.tsv | 携带表型数据以支持 WGCNA 模块-性状关联分析 |
+
+分析在单机完成，完整运行约需 2-4 小时（取决于硬件配置）。
+
+### 9.3 各步骤产出
+
+#### 步骤 0：数据预处理
+
+**关键输出：**
+
+| 文件 | 内容 |
+|------|------|
+| `input_overview.txt` | 完整的输入数据摘要报告 |
+| `mapping_list.tsv` | 51,399 对蛋白质-磷酸化位点映射表 |
+| `protein_preprocessed.tsv` | 清洗后的蛋白表达矩阵 |
+| `phosprotein_preprocessed.tsv` | 清洗后的磷酸化位点表达矩阵 |
+| `metadata.tsv` | 格式化的临床元数据 |
+| `sample_list.tsv` | 样本分组清单（T=140, N=75） |
+
+**数据质量：** 8,754 种蛋白与 4,768 个磷酸化蛋白中共有 3,998 个重叠蛋白，平均每个磷酸化蛋白含 3.49 个磷酸化位点。
+
+#### 步骤 1：模式分析
+
+**1.1 Procrustes 分析** — 评估蛋白质组与磷酸化组的数据一致性，生成 Procrustes 旋转图 (`procrustes.png`)。
+
+**1.2 分子亚型** — 基于多组学数据的分子分型：
+- `molecular_subtyping_sankey.png` — 桑基图展示蛋白亚型 ↔ 磷酸化亚型的对应关系
+- `molecular_subtyping_sankey_by_group.png` — 按 T/N 分组展示亚型流转
+
+**1.3 WGCNA 加权基因共表达网络**：
+- 蛋白水平：`Protein_soft_threshold.png`（软阈值选择）、`Protein_Sample_Dendrogram_and_Metadata_Heatmap.png`（样本聚类 + 表型热图）
+- 磷酸化水平：同上，对应 `PhosProtein_*` 文件
+- 模块-性状关联：`module_metadata_correlation_pheatmap.png`（多组学模块与临床性状的相关性热图）
+
+#### 步骤 2：差异分析
+
+**2.1 组学差异分析** — 蛋白水平与磷酸化水平的差异表达四象限图 (`omics_diff_quadrant_plot.png`)：
+- 右上象限：蛋白上调 + 磷酸化上调（协同激活）
+- 左上/右下象限：蛋白与磷酸化方向不一致（翻译后调控主导）
+
+**2.2 磷酸化速率亚型分析** — `ratio_clusters.png` 展示磷酸化速率聚类模式，`site_routing.png` 展示位点归类路径。16 个代表性位点在 `case_sites/` 下生成独立差异图（如 `YAP1_S164.png`、`CTNNB1_S675.png` 等），展示单个磷酸化位点的肿瘤 vs 正常差异模式。
+
+**2.3 稳定差异网络**：
+- 自举法稳定性检验：`Bootnet_T.png`、`Bootnet_N.png`（T 和 N 各自的网络稳定性）
+- 整体网络 GO/KEGG 富集：突出 PDAC 相关通路
+- 网络聚类：`network_by_top_modules.png` 展示整体模块结构
+- 子网络分析：cluster 1/3/4/5/6/8/9 每个子网络均有独立可视化（包含差异网络图、配体-受体网络、转录因子调控网络）及功能富集分析
+
+#### 步骤 3：功能分析
+
+**3.1 组学功能富集**：
+- `Protein_PhosProtein_GO_enrichment.png` — 整合蛋白+磷酸化差异基因的 GO 富集气泡图
+- `Protein_PhosProtein_KEGG_enrichment.png` — KEGG 通路富集结果
+
+**3.2 知识图谱功能网络** — 基于 Neo4j 图数据库，整合 PhosphoSitePlus 和 TRRUST 调控关系，以 PDAC 为疾病上下文构建的功能网络。
+
+社区检测识别出多个功能模块（module 3-9），每个模块包含：
+- `pro_phosphopro_network_ALL.png` — 模块全景网络图（含蛋白节点、磷酸化节点、调控边）
+- `pro_phosphopro_network_LR.png` — 配体-受体相互作用子网络
+- `pro_phosphopro_network_TF.png` — 转录因子调控子网络
+- `Protein_PhosProtein_GO_enrichment.png` — 模块特异的 GO 功能注释
+- `Protein_PhosProtein_KEGG_enrichment.png` — 模块特异的通路富集
+
+### 9.4 结果解读要点
+
+本次 PDAC 分析揭示了以下生物学发现方向：
+
+1. **翻译后调控主导**：差异分析四象限图中，有大量蛋白不变但磷酸化水平显著变化的位点（左上/右下象限），提示 PDAC 中翻译后修饰层面（而非蛋白表达层面）的调控占据重要地位。
+
+2. **关键磷酸化位点**：`case_sites/` 下的 YAP1、CTNNB1、COPA 等位点已知在胰腺癌中发挥重要作用，磷酸化速率亚型分析揭示了它们在不同样本中的调控模式差异。
+
+3. **功能模块**：知识图谱网络聚类识别出多个功能模块，各模块富集于特定的 KEGG 通路和 GO 术语，可对应论文正文 2.6 节中的功能解读。
+
+4. **临床关联**：WGCNA 模块-性状关联热图展示了特定共表达模块与临床特征（肿瘤大小、侵袭程度等）的显著性关联。
+
+---
+
+## 10. 常见问题
 
 ### Q: 运行报错 "Neo4j connection refused"
 
@@ -597,7 +721,7 @@ ProPhosLinker ... --steps "2,3"
 
 ---
 
-## 10. 引用
+## 11. 引用
 
 如果 ProPhosLinker 对您的研究有帮助，请引用：
 
