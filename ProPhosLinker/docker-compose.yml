@@ -1,0 +1,44 @@
+# =============================================================================
+# ProPhosLinker Docker Compose
+#
+# Bundles Python + R + Neo4j + all analysis code into a single container.
+# Mount your input data and output directory, then run the pipeline.
+#
+# Quick start:
+#   docker-compose build
+#   docker-compose run --rm prophoslinker \
+#     --pro_file /data/protein_abundance.tsv \
+#     --phos_file /data/phosphoprotein_abundance.tsv \
+#     --sample_group /data/compare_groups.tsv \
+#     --mapping_file /data/protein_phosphoproSite.tsv \
+#     --outdir /results \
+#     --group_comparing "T:N"
+#
+# Or with docker run directly:
+#   docker run -it --rm \
+#     -v ./casedata:/data \
+#     -v ./results:/results \
+#     prophoslinker \
+#     [your pipeline args...]
+# =============================================================================
+version: "3.8"
+
+services:
+  prophoslinker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: prophoslinker:latest
+    container_name: prophoslinker
+    volumes:
+      - ./casedata:/data:ro
+      - ./results:/results
+    # Override CMD with your actual run parameters in docker-compose run or below:
+    # command:
+    #   - --pro_file /data/protein_abundance.tsv
+    #   - --phos_file /data/phosphoprotein_abundance.tsv
+    #   - --sample_group /data/compare_groups.tsv
+    #   - --mapping_file /data/protein_phosphoproSite.tsv
+    #   - --outdir /results
+    #   - --group_comparing
+    #   - "T:N"

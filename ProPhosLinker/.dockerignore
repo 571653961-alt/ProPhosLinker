@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# R
+.RData
+.Rhistory
+.Rproj.user/
+Rplots.pdf
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Results & data (should be mounted, not baked in)
+result/
+results/
+casedata/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+!entrypoint.sh
+
+# Temp
+*.log
+*.tmp
