@@ -1,11 +1,13 @@
 # ProPhosLinker
 
-ProPhosLinker is an integrative analysis toolkit designed to provide an in-depth understanding of proteomics and phosphoproteomics data. It facilitates the exploration of complex biological processes by offering a reproducible pipeline for:
+> 📖 **完整使用手册请查看 [docs/user_manual.md](docs/user_manual.md)**
 
-- **Differential expression analysis** of proteins and phosphosites.
-- **Phosphorylation rate inference** (site-level vs protein-level) through advanced quantile modelling.
-- **Knowledge graph-based functional network construction** (Neo4j-enabled), leveraging heterogeneous data sources (e.g., PhosphoSitePlus, TRRUST).
-- **Subtype concordance and clustering** using advanced methods (Mfuzz, WGCNA, NMF).
+ProPhosLinker 是一个整合蛋白质组学和磷酸化蛋白质组学的生物信息学分析工具，提供从数据预处理到功能解读的全流程自动化分析。
+
+- **差异表达分析** — 蛋白质和磷酸化位点的 limma 差异分析
+- **磷酸化率推断** — 基于条件分位数模型的位点级磷酸化动态分析
+- **知识图谱功能网络** — Neo4j 驱动的蛋白质相互作用网络（整合 PhosphoSitePlus、TRRUST 等）
+- **分子分型与聚类** — Procrustes、NMF、WGCNA 多方法整合
 
 ---
 
@@ -26,7 +28,7 @@ This is the easiest way to run ProPhosLinker. The pre-built image contains all n
 
 #### 1. Pull the Image
 ```bash
-docker pull ppy1222/prophoslinker:v1
+docker pull ppy1222/prophoslinker:v2
 ```
 
 #### 2. Run the Container
@@ -36,7 +38,7 @@ docker run -it --rm \
   -p 7474:7474 -p 7687:7687 \
   -v /your/local/path:/app/results \
   --name prophoslinker_test \
-  ppy1222/prophoslinker:v1
+  ppy1222/prophoslinker:v2
 ```
 
 #### 3. Run analysis inside Docker
